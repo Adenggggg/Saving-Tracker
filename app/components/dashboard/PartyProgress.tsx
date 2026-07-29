@@ -1,3 +1,4 @@
+import { Lightbulb } from "lucide-react";
 import { peso, TOTAL_WEEKS } from "~/lib/dashboard-format";
 
 export function PartyProgress({
@@ -11,10 +12,10 @@ export function PartyProgress({
 }) {
   return (
     <div
-      className="rounded-2xl p-6 text-white lg:col-span-2"
+      className="rounded-2xl p-4 text-white sm:p-6 lg:col-span-2"
       style={{ background: "linear-gradient(135deg, #0f3d2e, #163f2e)" }}
     >
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="text-sm font-medium">Party Progress</p>
           <p className="text-xs text-white/70">
@@ -30,7 +31,7 @@ export function PartyProgress({
         <div className="h-full rounded-full" style={{ width: `${goalPct}%`, background: "#c9a227" }} />
       </div>
       <div className="flex items-start gap-2 rounded-xl bg-white/10 p-3 text-xs">
-        <i className="ti ti-bulb mt-0.5 text-sm" style={{ color: "#c9a227" }} aria-hidden="true" />
+        <Lightbulb size={16} className="mt-0.5 shrink-0" color="#c9a227" />
         <span>
           <strong>Savings Tip:</strong> Start early to avoid the December rush and maximize holiday
           discounts!

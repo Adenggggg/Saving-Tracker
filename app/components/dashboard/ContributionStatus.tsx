@@ -1,4 +1,5 @@
 import { useFetcher } from "react-router";
+import { History } from "lucide-react";
 import { AVATAR_COLORS, TOTAL_WEEKS } from "~/lib/dashboard-format";
 
 type Member = { id: string; name: string; email: string };
@@ -19,8 +20,8 @@ export function ContributionStatus({
   weekStart: string;
 }) {
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm">
-      <div className="mb-2 flex items-center justify-between">
+    <div className="rounded-2xl bg-white p-4 shadow-sm sm:p-5">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-sm font-medium">Contribution Status</p>
           <p className="text-xs text-muted-foreground">
@@ -28,7 +29,7 @@ export function ContributionStatus({
           </p>
         </div>
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <i className="ti ti-history text-sm" aria-hidden="true" />
+          <History size={14} />
           View History
         </div>
       </div>
@@ -67,29 +68,29 @@ function MemberRow({
   const fetcher = useFetcher();
 
   return (
-    <div className="flex items-center justify-between border-b border-border py-3 last:border-0">
-      <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border py-3 last:border-0">
+      <div className="flex min-w-0 items-center gap-3">
         <div
-          className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-medium text-white"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-medium text-white"
           style={{ background: color }}
         >
           {member.name.slice(0, 1).toUpperCase()}
         </div>
-        <div>
-          <p className="text-sm">{member.name}</p>
+        <div className="min-w-0">
+          <p className="truncate text-sm">{member.name}</p>
           <p className="flex items-center gap-1 text-xs" style={{ color: paid ? "#1f7a4d" : "#b23b3b" }}>
-            <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: paid ? "#1f7a4d" : "#b23b3b" }} />
+            <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: paid ? "#1f7a4d" : "#b23b3b" }} />
             {paid ? "Paid this week" : "Pending payment"}
           </p>
         </div>
       </div>
 
       {paid ? (
-        <span className="rounded-full px-4 py-1.5 text-xs font-medium" style={{ background: "#e7f5ee", color: "#1f7a4d" }}>
+        <span className="shrink-0 rounded-full px-4 py-1.5 text-xs font-medium" style={{ background: "#e7f5ee", color: "#1f7a4d" }}>
           Paid
         </span>
       ) : (
-        <fetcher.Form method="post" action="/api/contribute">
+        <fetcher.Form method="post" action="/api/contribute" className="shrink-0">
           <input type="hidden" name="userId" value={member.id} />
           <input type="hidden" name="groupId" value={groupId} />
           <input type="hidden" name="amount" value={weeklyAmount} />
