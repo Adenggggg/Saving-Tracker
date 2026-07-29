@@ -1,10 +1,11 @@
+import { Link, useLocation } from "react-router";
 import { LayoutDashboard, Users, History, Settings, Gift, X } from "lucide-react";
 
 const NAV = [
-  { Icon: LayoutDashboard, label: "Dashboard" },
-  { Icon: Users, label: "Members" },
-  { Icon: History, label: "History" },
-  { Icon: Settings, label: "Settings" },
+  { Icon: LayoutDashboard, label: "Dashboard", to: "/" },
+  { Icon: Users, label: "Members", to: "/members" },
+  { Icon: History, label: "History", to: "/history" },
+  { Icon: Settings, label: "Settings", to: "/settings" },
 ];
 
 export function Sidebar({
@@ -16,9 +17,10 @@ export function Sidebar({
   open: boolean;
   onClose: () => void;
 }) {
+  const location = useLocation();
+
   return (
     <>
-      {/* Backdrop, mobile only, shown when the sidebar is open */}
       {open && (
         <div
           className="fixed inset-0 z-40 bg-black/40 md:hidden"
@@ -44,20 +46,27 @@ export function Sidebar({
           </button>
         </div>
         <nav className="space-y-2">
-          {NAV.map(({ Icon, label }, i) => (
-            <div
-              key={label}
-              className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm"
-              style={
-                i === 0
-                  ? { background: "#0f3d2e", color: "#ffffff", fontWeight: 500 }
-                  : { color: "#8a8a8a" }
-              }
-            >
-              <Icon size={18} />
-              {label}
-            </div>
-          ))}
+          {NAV.map(({ Icon, label, to }) => {
+            const active = location.pathname === to;
+            return (
+              <Link
+                key={label}
+                to={to}
+                onClick={onClose}
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition-colors ${
+                  active ? "" : "hover:bg-[#e7f0ea] hover:text-[#0f3d2e]"
+                }`}
+                style={
+                  active
+                    ? { background: "#0f3d2e", color: "#ffffff", fontWeight: 500 }
+                    : { color: "#8a8a8a" }
+                }
+              >
+                <Icon size={18} />
+                {label}
+              </Link>
+            );
+          })}
         </nav>
       </aside>
     </>
