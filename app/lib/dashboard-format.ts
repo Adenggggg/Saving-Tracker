@@ -1,5 +1,7 @@
 export const TOTAL_WEEKS = 24;
 
+export const SAVINGS_START_DATE = "2026-08-02";
+
 export const AVATAR_COLORS = [
   "#0f3d2e",
   "#c9a227",

@@ -5,6 +5,7 @@ import {
   daysUntilChristmas,
   formatLongDate,
   weekNumberSinceStart,
+  SAVINGS_START_DATE,
 } from "~/lib/dashboard-format";
 
 import { Sidebar } from "~/components/dashboard/Sidebar";
@@ -29,7 +30,7 @@ export default function Dashboard() {
   const goalAmount = group.goalAmount ?? 0;
   const goalPct = goalAmount ? Math.min(100, Math.round((totalSaved / goalAmount) * 100)) : 0;
   const remaining = Math.max(0, goalAmount - totalSaved);
-  const weekNum = weekNumberSinceStart((group.createdAt as unknown as string) ?? weekStart, weekStart);
+  const weekNum = weekNumberSinceStart(SAVINGS_START_DATE, weekStart);
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: "#f7f6f2" }}>
@@ -41,7 +42,7 @@ export default function Dashboard() {
           onMenuClick={() => setMenuOpen(true)}
         />
 
-        <HeroBanner title={group.name} dateLabel={formatLongDate(weekStart)} />
+        <HeroBanner title={group.name} dateLabel={formatLongDate(SAVINGS_START_DATE)} />
 
         <StatCards
           totalSaved={totalSaved}

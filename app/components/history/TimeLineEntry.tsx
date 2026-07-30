@@ -3,8 +3,8 @@ import { peso } from "~/lib/dashboard-format";
 import type { TimelineEntry as TimelineEntryType } from "~/lib/history-loader.server";
 
 const ACCENTS = [
-  { icon: "#0f3d2e", iconBg: "#e7f0ea", dot: "#0f3d2e" },
-  { icon: "#8a6d1f", iconBg: "#f7edd2", dot: "#c9a227" },
+  { icon: "#0e3d2c", iconBg: "#0e3d2c", cardBg: "#ffffff", bar: "#0e3d2c", dot: "#0e3d2c" },
+  { icon: "#8a6d1f", iconBg: "#c9a227", cardBg: "#ffffff", bar: "#c9a227", dot: "#c9a227" },
 ];
 
 export function TimelineEntry({ entry, accentIndex = 0 }: { entry: TimelineEntryType; accentIndex?: number }) {
@@ -12,7 +12,7 @@ export function TimelineEntry({ entry, accentIndex = 0 }: { entry: TimelineEntry
 
   if (entry.type === "milestone") {
     return (
-      <div className="relative overflow-hidden rounded-2xl p-5 text-white" style={{ background: "linear-gradient(135deg, #0f3d2e, #163f2e)" }}>
+      <div className="relative overflow-hidden rounded-2xl p-5 text-white" style={{ background: "linear-gradient(135deg, #0e3d2c, #163f2e)" }}>
         <Star
           className="pointer-events-none absolute -right-2 -top-2 opacity-15"
           size={90}
@@ -37,17 +37,18 @@ export function TimelineEntry({ entry, accentIndex = 0 }: { entry: TimelineEntry
   }
 
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm">
+    <div className="relative overflow-hidden rounded-2xl bg-white p-5 pl-6 shadow-sm">
+      <div className="absolute bottom-0 left-0 top-0 w-1.5" style={{ background: accent.bar }} />
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-3">
           <div
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
             style={{ background: accent.iconBg }}
           >
-            <Gift size={16} style={{ color: accent.icon }} />
+            <Gift size={16} color="#ffffff" />
           </div>
           <div>
-            <p className="text-sm font-medium" style={{ color: accent.icon }}>
+            <p className="text-sm font-semibold" style={{ color: accent.icon }}>
               Contribution
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
@@ -59,7 +60,7 @@ export function TimelineEntry({ entry, accentIndex = 0 }: { entry: TimelineEntry
             </p>
           </div>
         </div>
-        <p className="text-base font-semibold" style={{ color: accent.icon }}>
+        <p className="text-base font-bold" style={{ color: accent.icon }}>
           {peso(entry.amount)}
         </p>
       </div>

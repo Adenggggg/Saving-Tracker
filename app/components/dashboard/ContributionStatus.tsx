@@ -1,4 +1,4 @@
-import { useFetcher } from "react-router";
+import { Link, useFetcher } from "react-router";
 import { History } from "lucide-react";
 import { AVATAR_COLORS, TOTAL_WEEKS } from "~/lib/dashboard-format";
 
@@ -28,10 +28,13 @@ export function ContributionStatus({
             Weekly tracking for week {weekNum} of {TOTAL_WEEKS}
           </p>
         </div>
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+        <Link
+          to="/history"
+          className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+        >
           <History size={14} />
           View History
-        </div>
+        </Link>
       </div>
       <div className="mt-3">
         {members.map((member, i) => (
