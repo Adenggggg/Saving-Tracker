@@ -61,19 +61,23 @@ export function MemberRow({ member, index }: { member: MemberRowType; index: num
       </td>
 
       <td className="py-4">
-        {!member.paidThisWeek && (
-          <fetcher.Form method="post" action="/api/remind-member">
-            <input type="hidden" name="userId" value={member.id} />
-            <button
-              type="submit"
-              disabled={fetcher.state !== "idle"}
-              className="rounded-full px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-              style={{ background: "#b23b3b" }}
-            >
-              {fetcher.state !== "idle" ? "Sending…" : reminded ? "Sent ✓" : "Remind"}
-            </button>
-          </fetcher.Form>
-        )}
+        <fetcher.Form method="post" action="/api/remind-member">
+          <input type="hidden" name="userId" value={member.id} />
+          <button
+            type="submit"
+            disabled={member.paidThisWeek || fetcher.state !== "idle"}
+            className="rounded-full px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+            style={{ background: "#b23b3b" }}
+          >
+            {member.paidThisWeek
+              ? "Remind"
+              : fetcher.state !== "idle"
+              ? "Sending…"
+              : reminded
+              ? "Sent ✓"
+              : "Remind"}
+          </button>
+        </fetcher.Form>
         {fetcher.data?.ok === false && (
           <p className="mt-1 text-xs text-muted-foreground">{fetcher.data.reason}</p>
         )}
