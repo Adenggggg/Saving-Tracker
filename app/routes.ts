@@ -5,6 +5,4 @@ export default [
   route("members", "routes/members.tsx"),
   route("api/contribute", "routes/api.contribute.ts"),
   route("api/remind-member", "routes/api.remind-member.ts"),
-  route("api/push/subscribe", "routes/api.push-subscribe.ts"),
-  route("api/push/notify", "routes/api.push-notify.ts"),
 ] satisfies RouteConfig;
