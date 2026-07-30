@@ -1,41 +1,27 @@
 import type { ActionFunctionArgs } from "react-router";
 import { eq } from "drizzle-orm";
-import webpush from "web-push";
 import { db } from "../../db/client";
-import { pushSubscriptions } from "../../db/schema";
+import { users, groups } from "../../db/schema";
+import { sendReminderEmail } from "~/lib/email.server";
 
-webpush.setVapidDetails(
-  "mailto:you@example.com",
-  process.env.VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
-
+// Sends a one-off "your contribution is pending" email to a single member.
+// Used by the "Remind" button on the Members page.
 export async function action({ request }: ActionFunctionArgs) {
   const form = await request.formData();
   const userId = String(form.get("userId"));
 
-  const subs = await db
-    .select()
-    .from(pushSubscriptions)
-    .where(eq(pushSubscriptions.userId, userId));
+  const user = (await db.select().from(users).where(eq(users.id, userId)))[0];
+  const group = (await db.select().from(groups).limit(1))[0];
 
-  if (subs.length === 0) {
-    return { ok: false, reason: "This member hasn't enabled push reminders yet." };
+  if (!user) {
+    return { ok: false, reason: "Member not found." };
   }
 
-  const payload = JSON.stringify({
-    title: "Christmas Party Fund",
-    body: "Friendly reminder: your contribution is still pending this week.",
-  });
-
-  await Promise.allSettled(
-    subs.map((s) =>
-      webpush.sendNotification(
-        { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-        payload
-      )
-    )
-  );
-
-  return { ok: true };
+  try {
+    await sendReminderEmail(user.email, user.name, group?.name ?? "Savings Group");
+    return { ok: true };
+  } catch (err) {
+    console.error("Failed to send reminder email:", err);
+    return { ok: false, reason: "Couldn't send the email. Check GMAIL_USER / GMAIL_APP_PASSWORD in .env." };
+  }
 }

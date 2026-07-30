@@ -1,16 +1,10 @@
-import { Bell, User, Menu } from "lucide-react";
+import { User, Menu } from "lucide-react";
 
 export function TopBar({
   daysUntilChristmas,
-  onEnableReminders,
-  remindersEnabled,
-  remindersSupported,
   onMenuClick,
 }: {
   daysUntilChristmas: number;
-  onEnableReminders: () => void;
-  remindersEnabled: boolean;
-  remindersSupported: boolean;
   onMenuClick: () => void;
 }) {
   return (
@@ -24,21 +18,16 @@ export function TopBar({
         </div>
       </div>
 
-      <div className="flex items-center gap-3 sm:gap-4">
-        <button onClick={onEnableReminders} disabled={remindersEnabled || !remindersSupported}>
-          <Bell size={20} color="#444" />
-        </button>
-        <div className="flex items-center gap-2">
-          <div className="hidden text-right leading-tight sm:block">
-            <p className="text-sm font-medium">Claus Manager</p>
-            <p className="text-xs text-muted-foreground">Admin Access</p>
-          </div>
-          <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-            style={{ background: "#002b17" }}
-          >
-            <User size={16} color="#ffffff" />
-          </div>
+      <div className="flex items-center gap-2">
+        <div className="hidden text-right leading-tight sm:block">
+          <p className="text-sm font-medium">Claus Manager</p>
+          <p className="text-xs text-muted-foreground">Admin Access</p>
+        </div>
+        <div
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+          style={{ background: "#002b17" }}
+        >
+          <User size={16} color="#ffffff" />
         </div>
       </div>
     </div>

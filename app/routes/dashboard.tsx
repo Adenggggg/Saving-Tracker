@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useLoaderData } from "react-router";
 import { loadDashboardData } from "~/lib/dashboard-loader.server";
-import { usePushReminders } from "~/lib/use-push-reminders";
 import {
   daysUntilChristmas,
   formatLongDate,
@@ -23,7 +22,6 @@ export async function loader() {
 
 export default function Dashboard() {
   const { group, members, paidUserIds, weekStart, totalSaved } = useLoaderData<typeof loader>();
-  const { permission, enablePush } = usePushReminders();
   const [menuOpen, setMenuOpen] = useState(false);
 
   if (!group) return <NoGroupYet />;
@@ -40,9 +38,6 @@ export default function Dashboard() {
       <main className="h-screen flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
         <TopBar
           daysUntilChristmas={daysUntilChristmas()}
-          onEnableReminders={enablePush}
-          remindersEnabled={permission === "granted"}
-          remindersSupported={permission !== "unsupported"}
           onMenuClick={() => setMenuOpen(true)}
         />
 

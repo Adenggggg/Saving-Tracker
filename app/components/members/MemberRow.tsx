@@ -1,5 +1,4 @@
 import { useFetcher } from "react-router";
-import { MoreVertical } from "lucide-react";
 import { peso } from "~/lib/dashboard-format";
 import type { MemberRow as MemberRowType } from "~/lib/members-loader.server";
 import { AVATAR_COLORS } from "~/lib/dashboard-format";
@@ -63,22 +62,17 @@ export function MemberRow({ member, index }: { member: MemberRowType; index: num
 
       <td className="py-4">
         {!member.paidThisWeek && (
-          <div className="flex items-center gap-2">
-            <fetcher.Form method="post" action="/api/remind-member">
-              <input type="hidden" name="userId" value={member.id} />
-              <button
-                type="submit"
-                disabled={fetcher.state !== "idle"}
-                className="rounded-full px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                style={{ background: "#b23b3b" }}
-              >
-                {fetcher.state !== "idle" ? "Sending…" : reminded ? "Sent ✓" : "Remind"}
-              </button>
-            </fetcher.Form>
-            <button aria-label="More actions" className="p-1 text-muted-foreground hover:text-foreground">
-              <MoreVertical size={16} />
+          <fetcher.Form method="post" action="/api/remind-member">
+            <input type="hidden" name="userId" value={member.id} />
+            <button
+              type="submit"
+              disabled={fetcher.state !== "idle"}
+              className="rounded-full px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+              style={{ background: "#b23b3b" }}
+            >
+              {fetcher.state !== "idle" ? "Sending…" : reminded ? "Sent ✓" : "Remind"}
             </button>
-          </div>
+          </fetcher.Form>
         )}
         {fetcher.data?.ok === false && (
           <p className="mt-1 text-xs text-muted-foreground">{fetcher.data.reason}</p>
