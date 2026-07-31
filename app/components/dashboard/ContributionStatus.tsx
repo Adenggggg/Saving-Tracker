@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Link, useFetcher } from "react-router";
 import { History } from "lucide-react";
 import { AVATAR_COLORS, TOTAL_WEEKS } from "~/lib/dashboard-format";
+import { ConfirmDialog } from "~/components/ConfirmDialog";
 
 type Member = { id: string; name: string; email: string };
 
@@ -69,6 +71,20 @@ function MemberRow({
   weekStart: string;
 }) {
   const fetcher = useFetcher();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  function handleConfirm() {
+    setConfirmOpen(false);
+    fetcher.submit(
+      {
+        userId: member.id,
+        groupId,
+        amount: String(weeklyAmount),
+        weekStart,
+      },
+      { method: "post", action: "/api/contribute" }
+    );
+  }
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border py-3 last:border-0">
@@ -93,19 +109,26 @@ function MemberRow({
           Paid
         </span>
       ) : (
-        <fetcher.Form method="post" action="/api/contribute" className="shrink-0">
-          <input type="hidden" name="userId" value={member.id} />
-          <input type="hidden" name="groupId" value={groupId} />
-          <input type="hidden" name="amount" value={weeklyAmount} />
-          <input type="hidden" name="weekStart" value={weekStart} />
+        <>
           <button
-            type="submit"
-            className="rounded-full px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
+            onClick={() => setConfirmOpen(true)}
+            disabled={fetcher.state !== "idle"}
+            className="shrink-0 rounded-full px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
             style={{ background: "#b23b3b" }}
           >
-            Mark Paid
+            {fetcher.state !== "idle" ? "Saving…" : "Mark Paid"}
           </button>
-        </fetcher.Form>
+
+          <ConfirmDialog
+            open={confirmOpen}
+            title="Confirm payment"
+            message={`Mark ${member.name} as paid ₱${weeklyAmount} for this week?`}
+            confirmLabel="Mark Paid"
+            confirmColor="#b23b3b"
+            onConfirm={handleConfirm}
+            onCancel={() => setConfirmOpen(false)}
+          />
+        </>
       )}
     </div>
   );

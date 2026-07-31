@@ -4,9 +4,7 @@ import { Menu } from "lucide-react";
 import { loadSettingsData } from "~/lib/settings-loader.server";
 import { Sidebar } from "~/components/dashboard/Sidebar";
 import { SettingsHeader } from "~/components/settings/SettingsHeader";
-import { FundConfiguration } from "~/components/settings/FundConfiguration";
-import { TeamSection } from "~/components/settings/TeamSection";
-import { BudgetBreakdownSettings } from "~/components/settings/BudgetBreakdownSettings";
+import { FundSettingsPanel } from "~/components/settings/FundSettingsPanel";
 import { DangerZone } from "~/components/settings/DangerZone";
 import { NoGroupYet } from "~/components/dashboard/NoGroupYet";
 
@@ -15,7 +13,7 @@ export async function loader() {
 }
 
 export default function SettingsPage() {
-  const { group, members, categories } = useLoaderData<typeof loader>();
+  const { group, categories } = useLoaderData<typeof loader>();
   const [menuOpen, setMenuOpen] = useState(false);
 
   if (!group) return <NoGroupYet />;
@@ -42,21 +40,15 @@ export default function SettingsPage() {
             <SettingsHeader hideLabel />
           </div>
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <FundConfiguration
+          <div className="max-w-5xl space-y-4">
+            <FundSettingsPanel
               groupId={group.id}
               name={group.name}
               weeklyAmount={group.weeklyAmount}
               goalAmount={group.goalAmount ?? 0}
+              categories={categories}
             />
-            <TeamSection members={members} />
-          </div>
 
-          <div className="mt-4">
-            <BudgetBreakdownSettings categories={categories} />
-          </div>
-
-          <div className="mt-4">
             <DangerZone groupId={group.id} groupName={group.name} />
           </div>
         </div>

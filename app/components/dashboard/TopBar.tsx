@@ -1,4 +1,6 @@
-import { User, Menu } from "lucide-react";
+import { useState } from "react";
+import { Menu, QrCode } from "lucide-react";
+import { QRCodeModal } from "~/components/QRCodeModal";
 
 export function TopBar({
   daysUntilChristmas,
@@ -7,6 +9,8 @@ export function TopBar({
   daysUntilChristmas: number;
   onMenuClick: () => void;
 }) {
+  const [qrOpen, setQrOpen] = useState(false);
+
   return (
     <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
       <div className="flex items-center gap-3">
@@ -18,18 +22,16 @@ export function TopBar({
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <div className="hidden text-right leading-tight sm:block">
-          <p className="text-sm font-medium">Claus Manager</p>
-          <p className="text-xs text-muted-foreground">Admin Access</p>
-        </div>
-        <div
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-          style={{ background: "#002b17" }}
-        >
-          <User size={16} color="#ffffff" />
-        </div>
-      </div>
+      <button
+        onClick={() => setQrOpen(true)}
+        className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 sm:text-sm"
+        style={{ background: "#0e3d2c" }}
+      >
+        <QrCode size={16} />
+        <span className="hidden sm:inline">Scan to Pay</span>
+      </button>
+
+      <QRCodeModal open={qrOpen} onClose={() => setQrOpen(false)} />
     </div>
   );
 }

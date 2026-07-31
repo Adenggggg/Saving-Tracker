@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useFetcher } from "react-router";
 import { peso } from "~/lib/dashboard-format";
 import type { MemberRow as MemberRowType } from "~/lib/members-loader.server";
 import { AVATAR_COLORS } from "~/lib/dashboard-format";
 import { useToast } from "~/components/Toast";
+import { ConfirmDialog } from "~/components/ConfirmDialog";
 
 function formatLastActivity(iso: string | null) {
   if (!iso) return "—";
@@ -15,6 +16,7 @@ export function MemberRow({ member, index }: { member: MemberRowType; index: num
   const { showToast } = useToast();
   const color = AVATAR_COLORS[index % AVATAR_COLORS.length];
   const reminded = fetcher.state === "idle" && fetcher.data?.ok;
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (fetcher.state === "idle" && fetcher.data) {
@@ -26,6 +28,11 @@ export function MemberRow({ member, index }: { member: MemberRowType; index: num
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetcher.state, fetcher.data]);
+
+  function handleConfirm() {
+    setConfirmOpen(false);
+    fetcher.submit({ userId: member.id }, { method: "post", action: "/api/remind-member" });
+  }
 
   return (
     <tr className="border-b border-border last:border-0">
@@ -75,23 +82,30 @@ export function MemberRow({ member, index }: { member: MemberRowType; index: num
       </td>
 
       <td className="py-4">
-        <fetcher.Form method="post" action="/api/remind-member">
-          <input type="hidden" name="userId" value={member.id} />
-          <button
-            type="submit"
-            disabled={member.paidThisWeek || fetcher.state !== "idle"}
-            className="rounded-full px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-            style={{ background: "#b23b3b" }}
-          >
-            {member.paidThisWeek
-              ? "Remind"
-              : fetcher.state !== "idle"
-              ? "Sending…"
-              : reminded
-              ? "Sent ✓"
-              : "Remind"}
-          </button>
-        </fetcher.Form>
+        <button
+          onClick={() => setConfirmOpen(true)}
+          disabled={member.paidThisWeek || fetcher.state !== "idle"}
+          className="rounded-full px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          style={{ background: "#b23b3b" }}
+        >
+          {member.paidThisWeek
+            ? "Remind"
+            : fetcher.state !== "idle"
+            ? "Sending…"
+            : reminded
+            ? "Sent ✓"
+            : "Remind"}
+        </button>
+
+        <ConfirmDialog
+          open={confirmOpen}
+          title="Send reminder"
+          message={`Send ${member.name} an email reminder about their pending contribution?`}
+          confirmLabel="Send Reminder"
+          confirmColor="#b23b3b"
+          onConfirm={handleConfirm}
+          onCancel={() => setConfirmOpen(false)}
+        />
       </td>
     </tr>
   );
