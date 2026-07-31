@@ -2,6 +2,7 @@ import { eq, and } from "drizzle-orm";
 import { db } from "../../db/client";
 import { groups, groupMembers, users, contributions } from "../../db/schema";
 import { currentWeekStart } from "~/lib/dashboard-format";
+import { getBudgetCategories } from "~/lib/budget-categories.server";
 
 export async function loadDashboardData() {
   const group = (await db.select().from(groups).limit(1))[0];
@@ -13,6 +14,7 @@ export async function loadDashboardData() {
       paidUserIds: [],
       weekStart: currentWeekStart(),
       totalSaved: 0,
+      categories: [],
     };
   }
 
@@ -35,6 +37,7 @@ export async function loadDashboardData() {
     .where(eq(contributions.groupId, group.id));
 
   const totalSaved = allContributions.reduce((sum, c) => sum + c.amount, 0);
+  const categories = await getBudgetCategories(group.id);
 
   return {
     group,
@@ -42,6 +45,7 @@ export async function loadDashboardData() {
     paidUserIds: paidRows.map((r) => r.userId),
     weekStart,
     totalSaved,
+    categories,
   };
 }
 

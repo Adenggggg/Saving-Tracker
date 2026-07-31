@@ -50,7 +50,17 @@ export const contributions = pgTable("contributions", {
   paidAt: timestamp("paid_at").defaultNow().notNull(),
 });
 
-// Stores browser Web Push subscriptions per user (free push, no third party)
+export const budgetCategories = pgTable("budget_categories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  groupId: uuid("group_id")
+    .notNull()
+    .references(() => groups.id, { onDelete: "cascade" }),
+  label: text("label").notNull(),
+  description: text("description"),
+  percent: integer("percent").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
 export const pushSubscriptions = pgTable("push_subscriptions", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")

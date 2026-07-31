@@ -6,6 +6,7 @@ import { Sidebar } from "~/components/dashboard/Sidebar";
 import { SettingsHeader } from "~/components/settings/SettingsHeader";
 import { FundConfiguration } from "~/components/settings/FundConfiguration";
 import { TeamSection } from "~/components/settings/TeamSection";
+import { BudgetBreakdownSettings } from "~/components/settings/BudgetBreakdownSettings";
 import { DangerZone } from "~/components/settings/DangerZone";
 import { NoGroupYet } from "~/components/dashboard/NoGroupYet";
 
@@ -14,7 +15,7 @@ export async function loader() {
 }
 
 export default function SettingsPage() {
-  const { group, members } = useLoaderData<typeof loader>();
+  const { group, members, categories } = useLoaderData<typeof loader>();
   const [menuOpen, setMenuOpen] = useState(false);
 
   if (!group) return <NoGroupYet />;
@@ -49,6 +50,10 @@ export default function SettingsPage() {
               goalAmount={group.goalAmount ?? 0}
             />
             <TeamSection members={members} />
+          </div>
+
+          <div className="mt-4">
+            <BudgetBreakdownSettings categories={categories} />
           </div>
 
           <div className="mt-4">

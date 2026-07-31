@@ -22,7 +22,7 @@ export async function loader() {
 }
 
 export default function Dashboard() {
-  const { group, members, paidUserIds, weekStart, totalSaved } = useLoaderData<typeof loader>();
+  const { group, members, paidUserIds, weekStart, totalSaved, categories } = useLoaderData<typeof loader>();
   const [menuOpen, setMenuOpen] = useState(false);
 
   if (!group) return <NoGroupYet />;
@@ -53,7 +53,7 @@ export default function Dashboard() {
 
         <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
           <PartyProgress goalAmount={goalAmount} goalPct={goalPct} weekNum={weekNum} />
-          <FundBreakdown goalAmount={goalAmount} />
+          <FundBreakdown goalAmount={goalAmount} categories={categories} />
         </div>
 
         <ContributionStatus

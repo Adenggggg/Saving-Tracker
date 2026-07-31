@@ -8,6 +8,13 @@
       "when": 1785153100336,
       "tag": "0000_curly_havok",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785468197094,
+      "tag": "0001_free_metal_master",
+      "breakpoints": true
     }
   ]
 }
