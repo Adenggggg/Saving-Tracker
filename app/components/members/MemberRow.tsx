@@ -1,7 +1,9 @@
+import { useEffect } from "react";
 import { useFetcher } from "react-router";
 import { peso } from "~/lib/dashboard-format";
 import type { MemberRow as MemberRowType } from "~/lib/members-loader.server";
 import { AVATAR_COLORS } from "~/lib/dashboard-format";
+import { useToast } from "~/components/Toast";
 
 function formatLastActivity(iso: string | null) {
   if (!iso) return "—";
@@ -10,8 +12,20 @@ function formatLastActivity(iso: string | null) {
 
 export function MemberRow({ member, index }: { member: MemberRowType; index: number }) {
   const fetcher = useFetcher<{ ok: boolean; reason?: string }>();
+  const { showToast } = useToast();
   const color = AVATAR_COLORS[index % AVATAR_COLORS.length];
   const reminded = fetcher.state === "idle" && fetcher.data?.ok;
+
+  useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data) {
+      if (fetcher.data.ok) {
+        showToast(`Reminder sent to ${member.name}.`, "success");
+      } else {
+        showToast(fetcher.data.reason ?? "Couldn't send the reminder.", "error");
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetcher.state, fetcher.data]);
 
   return (
     <tr className="border-b border-border last:border-0">
@@ -78,9 +92,6 @@ export function MemberRow({ member, index }: { member: MemberRowType; index: num
               : "Remind"}
           </button>
         </fetcher.Form>
-        {fetcher.data?.ok === false && (
-          <p className="mt-1 text-xs text-muted-foreground">{fetcher.data.reason}</p>
-        )}
       </td>
     </tr>
   );

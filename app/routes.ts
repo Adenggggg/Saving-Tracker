@@ -4,6 +4,9 @@ export default [
   index("routes/dashboard.tsx"),
   route("members", "routes/members.tsx"),
   route("history", "routes/history.tsx"),
+  route("settings", "routes/settings.tsx"),
   route("api/contribute", "routes/api.contribute.ts"),
   route("api/remind-member", "routes/api.remind-member.ts"),
+  route("api/update-fund", "routes/api.update-fund.ts"),
+  route("api/reset-fund", "routes/api.reset-fund.ts"),
 ] satisfies RouteConfig;

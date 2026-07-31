@@ -8,6 +8,7 @@ import {
 import type { LinksFunction } from "react-router";
 import "./app.css";
 import { TopLoadingBar } from "~/components/TopLoadingBar";
+import { ToastProvider } from "~/components/Toast";
 
 export const links: LinksFunction = () => [
   { rel: "manifest", href: "/manifest.json" },
@@ -40,9 +41,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <>
+    <ToastProvider>
       <TopLoadingBar />
       <Outlet />
-    </>
+    </ToastProvider>
   );
 }
