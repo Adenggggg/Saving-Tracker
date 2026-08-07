@@ -16,11 +16,16 @@ export function peso(n: number) {
   return "₱" + n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+const PHT_OFFSET_MS = 8 * 60 * 60 * 1000;
+
 export function currentWeekStart() {
-  const now = new Date();
-  const day = now.getDay();
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
-  const monday = new Date(now.setDate(diff));
+  const nowUtc = new Date();
+  const pht = new Date(nowUtc.getTime() + PHT_OFFSET_MS);
+
+  const day = pht.getUTCDay();
+  const diff = pht.getUTCDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(Date.UTC(pht.getUTCFullYear(), pht.getUTCMonth(), diff));
+
   return monday.toISOString().slice(0, 10);
 }
 

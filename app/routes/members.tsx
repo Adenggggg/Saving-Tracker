@@ -47,7 +47,7 @@ export default function MembersPage() {
 
         <MemberSearch value={query} onChange={setQuery} />
 
-        <MembersTable members={filtered} />
+        <MembersTable members={filtered} groupId={group.id} pendingCount={members.length - paidThisWeekCount} />
       </main>
     </div>
   );

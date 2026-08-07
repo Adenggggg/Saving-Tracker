@@ -7,6 +7,7 @@ export default [
   route("settings", "routes/settings.tsx"),
   route("api/contribute", "routes/api.contribute.ts"),
   route("api/remind-member", "routes/api.remind-member.ts"),
+  route("api/remind-all", "routes/api.remind-all.ts"),
   route("api/update-fund", "routes/api.update-fund.ts"),
   route("api/update-budget-categories", "routes/api.update-budget-categories.ts"),
   route("api/reset-fund", "routes/api.reset-fund.ts"),
