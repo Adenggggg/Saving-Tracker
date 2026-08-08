@@ -1,5 +1,5 @@
-import { Link, useLocation } from "react-router";
-import { LayoutDashboard, Users, History, Settings, Gift, X } from "lucide-react";
+import { Link, Form, useLocation } from "react-router";
+import { LayoutDashboard, Users, History, Settings, Gift, X, LogIn, LogOut } from "lucide-react";
 
 const NAV = [
   { Icon: LayoutDashboard, label: "Dashboard", to: "/" },
@@ -12,10 +12,12 @@ export function Sidebar({
   title,
   open,
   onClose,
+  currentUser,
 }: {
   title: string;
   open: boolean;
   onClose: () => void;
+  currentUser?: { id: string; name: string; email: string } | null;
 }) {
   const location = useLocation();
 
@@ -45,6 +47,7 @@ export function Sidebar({
             <X size={20} />
           </button>
         </div>
+
         <nav className="space-y-2">
           {NAV.map(({ Icon, label, to }) => {
             const active = location.pathname === to;
@@ -68,6 +71,44 @@ export function Sidebar({
             );
           })}
         </nav>
+
+        <div className="mt-auto border-t border-border pt-4">
+          {currentUser ? (
+            <div>
+              <div className="mb-2 flex items-center gap-2 px-2">
+                <div
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-medium text-white"
+                  style={{ background: "#0f3d2e" }}
+                >
+                  {currentUser.name.slice(0, 1).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-medium">{currentUser.name}</p>
+                  <p className="truncate text-[11px] text-muted-foreground">{currentUser.email}</p>
+                </div>
+              </div>
+              <Form method="post" action="/logout">
+                <button
+                  type="submit"
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground hover:bg-muted"
+                >
+                  <LogOut size={14} />
+                  Log out
+                </button>
+              </Form>
+            </div>
+          ) : (
+            <Link
+              to="/login"
+              onClick={onClose}
+              className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium"
+              style={{ color: "#0f3d2e" }}
+            >
+              <LogIn size={14} />
+              Log in to make changes
+            </Link>
+          )}
+        </div>
       </aside>
     </>
   );

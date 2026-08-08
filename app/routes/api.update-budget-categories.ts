@@ -2,8 +2,14 @@ import type { ActionFunctionArgs } from "react-router";
 import { eq } from "drizzle-orm";
 import { db } from "../../db/client";
 import { budgetCategories } from "../../db/schema";
+import { getUserId } from "~/lib/session.server";
 
 export async function action({ request }: ActionFunctionArgs) {
+  const requesterId = await getUserId(request);
+  if (!requesterId) {
+    return { ok: false, reason: "Please log in with your registered email to do this." };
+  }
+
   const body = (await request.json()) as {
     categories: { id: string; label: string; description: string; percent: number }[];
   };

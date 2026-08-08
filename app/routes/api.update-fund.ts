@@ -2,8 +2,14 @@ import type { ActionFunctionArgs } from "react-router";
 import { eq } from "drizzle-orm";
 import { db } from "../../db/client";
 import { groups } from "../../db/schema";
+import { getUserId } from "~/lib/session.server";
 
 export async function action({ request }: ActionFunctionArgs) {
+  const requesterId = await getUserId(request);
+  if (!requesterId) {
+    return { ok: false, reason: "Please log in with your registered email to do this." };
+  }
+
   const form = await request.formData();
   const groupId = String(form.get("groupId"));
   const name = String(form.get("name"));

@@ -3,10 +3,14 @@ import { eq } from "drizzle-orm";
 import { db } from "../../db/client";
 import { users, groups } from "../../db/schema";
 import { sendReminderEmail } from "~/lib/email.server";
+import { getUserId } from "~/lib/session.server";
 
-// Sends a one-off "your contribution is pending" email to a single member.
-// Used by the "Remind" button on the Members page.
 export async function action({ request }: ActionFunctionArgs) {
+  const requesterId = await getUserId(request);
+  if (!requesterId) {
+    return { ok: false, reason: "Please log in with your registered email to do this." };
+  }
+
   const form = await request.formData();
   const userId = String(form.get("userId"));
 

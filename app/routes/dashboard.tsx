@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useLoaderData } from "react-router";
+import type { LoaderFunctionArgs } from "react-router";
 import { loadDashboardData } from "~/lib/dashboard-loader.server";
+import { getCurrentUser } from "~/lib/auth.server";
 import {
   daysUntilChristmas,
   formatLongDate,
@@ -17,12 +19,14 @@ import { FundBreakdown } from "~/components/dashboard/FundBreakdown";
 import { ContributionStatus } from "~/components/dashboard/ContributionStatus";
 import { NoGroupYet } from "~/components/dashboard/NoGroupYet";
 
-export async function loader() {
-  return loadDashboardData();
+export async function loader({ request }: LoaderFunctionArgs) {
+  const [data, currentUser] = await Promise.all([loadDashboardData(), getCurrentUser(request)]);
+  return { ...data, currentUser };
 }
 
 export default function Dashboard() {
-  const { group, members, paidUserIds, weekStart, totalSaved, categories } = useLoaderData<typeof loader>();
+  const { group, members, paidUserIds, weekStart, totalSaved, categories, currentUser } =
+    useLoaderData<typeof loader>();
   const [menuOpen, setMenuOpen] = useState(false);
 
   if (!group) return <NoGroupYet />;
@@ -34,7 +38,7 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: "#f7f6f2" }}>
-      <Sidebar title={group.name} open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <Sidebar title={group.name} open={menuOpen} onClose={() => setMenuOpen(false)} currentUser={currentUser} />
 
       <main className="h-screen flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
         <TopBar
@@ -63,6 +67,7 @@ export default function Dashboard() {
           groupId={group.id}
           weeklyAmount={group.weeklyAmount}
           weekStart={weekStart}
+          isAuthenticated={!!currentUser}
         />
       </main>
     </div>

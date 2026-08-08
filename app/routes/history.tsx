@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import { useLoaderData } from "react-router";
+import type { LoaderFunctionArgs } from "react-router";
 import { Menu } from "lucide-react";
 import { loadHistoryData } from "~/lib/history-loader.server";
+import { getCurrentUser } from "~/lib/auth.server";
 import { Sidebar } from "~/components/dashboard/Sidebar";
 import { SnowBackground } from "~/components/snowbackground";
 import { HistoryHeader } from "~/components/history/HistoryHeader";
@@ -10,12 +12,13 @@ import { Timeline } from "~/components/history/Timeline";
 import { HistoryStatsFooter } from "~/components/history/HistoryStatsFooter";
 import { NoGroupYet } from "~/components/dashboard/NoGroupYet";
 
-export async function loader() {
-  return loadHistoryData();
+export async function loader({ request }: LoaderFunctionArgs) {
+  const [data, currentUser] = await Promise.all([loadHistoryData(), getCurrentUser(request)]);
+  return { ...data, currentUser };
 }
 
 export default function HistoryPage() {
-  const { group, members, entries, totalContributed } = useLoaderData<typeof loader>();
+  const { group, members, entries, totalContributed, currentUser } = useLoaderData<typeof loader>();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const [memberFilter, setMemberFilter] = useState("all");
@@ -44,7 +47,7 @@ export default function HistoryPage() {
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: "#f7f6f2" }}>
-      <Sidebar title={group.name} open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <Sidebar title={group.name} open={menuOpen} onClose={() => setMenuOpen(false)} currentUser={currentUser} />
 
       <main className="relative h-screen flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
         <SnowBackground />

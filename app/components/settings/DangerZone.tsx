@@ -3,7 +3,15 @@ import { useFetcher } from "react-router";
 import { AlertTriangle } from "lucide-react";
 import { useToast } from "~/components/Toast";
 
-export function DangerZone({ groupId, groupName }: { groupId: string; groupName: string }) {
+export function DangerZone({
+  groupId,
+  groupName,
+  isAuthenticated,
+}: {
+  groupId: string;
+  groupName: string;
+  isAuthenticated: boolean;
+}) {
   const fetcher = useFetcher<{ ok: boolean; reason?: string }>();
   const { showToast } = useToast();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -19,7 +27,6 @@ export function DangerZone({ groupId, groupName }: { groupId: string; groupName:
         showToast(fetcher.data.reason ?? "Couldn't reset the fund.", "error");
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetcher.state, fetcher.data]);
 
   return (
@@ -41,7 +48,8 @@ export function DangerZone({ groupId, groupName }: { groupId: string; groupName:
           </div>
           <button
             onClick={() => setConfirmOpen(true)}
-            className="shrink-0 rounded-full px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
+            disabled={!isAuthenticated}
+            className="shrink-0 rounded-full px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
             style={{ background: "#b23b3b" }}
           >
             Reset

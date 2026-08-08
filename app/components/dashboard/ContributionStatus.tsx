@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useFetcher } from "react-router";
-import { History } from "lucide-react";
+import { History, Lock } from "lucide-react";
 import { AVATAR_COLORS, TOTAL_WEEKS } from "~/lib/dashboard-format";
 import { ConfirmDialog } from "~/components/ConfirmDialog";
 
@@ -13,6 +13,7 @@ export function ContributionStatus({
   groupId,
   weeklyAmount,
   weekStart,
+  isAuthenticated,
 }: {
   members: Member[];
   paidUserIds: string[];
@@ -20,6 +21,7 @@ export function ContributionStatus({
   groupId: string;
   weeklyAmount: number;
   weekStart: string;
+  isAuthenticated: boolean;
 }) {
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm sm:p-5">
@@ -38,6 +40,14 @@ export function ContributionStatus({
           View History
         </Link>
       </div>
+
+      {!isAuthenticated && (
+        <p className="mb-3 flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs" style={{ background: "#fbeaea", color: "#b23b3b" }}>
+          <Lock size={12} />
+          Log in with your registered email to mark a payment.
+        </p>
+      )}
+
       <div className="mt-3">
         {members.map((member, i) => (
           <MemberRow
@@ -48,6 +58,7 @@ export function ContributionStatus({
             groupId={groupId}
             weeklyAmount={weeklyAmount}
             weekStart={weekStart}
+            isAuthenticated={isAuthenticated}
           />
         ))}
       </div>
@@ -62,6 +73,7 @@ function MemberRow({
   groupId,
   weeklyAmount,
   weekStart,
+  isAuthenticated,
 }: {
   member: Member;
   paid: boolean;
@@ -69,6 +81,7 @@ function MemberRow({
   groupId: string;
   weeklyAmount: number;
   weekStart: string;
+  isAuthenticated: boolean;
 }) {
   const fetcher = useFetcher();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -112,8 +125,8 @@ function MemberRow({
         <>
           <button
             onClick={() => setConfirmOpen(true)}
-            disabled={fetcher.state !== "idle"}
-            className="shrink-0 rounded-full px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+            disabled={!isAuthenticated || fetcher.state !== "idle"}
+            className="shrink-0 rounded-full px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
             style={{ background: "#b23b3b" }}
           >
             {fetcher.state !== "idle" ? "Saving…" : "Mark Paid"}

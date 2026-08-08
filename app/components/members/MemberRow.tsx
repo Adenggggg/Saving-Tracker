@@ -11,7 +11,15 @@ function formatLastActivity(iso: string | null) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export function MemberRow({ member, index }: { member: MemberRowType; index: number }) {
+export function MemberRow({
+  member,
+  index,
+  isAuthenticated,
+}: {
+  member: MemberRowType;
+  index: number;
+  isAuthenticated: boolean;
+}) {
   const fetcher = useFetcher<{ ok: boolean; reason?: string }>();
   const { showToast } = useToast();
   const color = AVATAR_COLORS[index % AVATAR_COLORS.length];
@@ -84,7 +92,7 @@ export function MemberRow({ member, index }: { member: MemberRowType; index: num
       <td className="py-4">
         <button
           onClick={() => setConfirmOpen(true)}
-          disabled={member.paidThisWeek || fetcher.state !== "idle"}
+          disabled={member.paidThisWeek || !isAuthenticated || fetcher.state !== "idle"}
           className="rounded-full px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           style={{ background: "#b23b3b" }}
         >

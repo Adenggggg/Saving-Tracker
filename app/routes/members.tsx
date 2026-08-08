@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useLoaderData } from "react-router";
+import type { LoaderFunctionArgs } from "react-router";
 import { loadMembersData } from "~/lib/members-loader.server";
+import { getCurrentUser } from "~/lib/auth.server";
 import { Sidebar } from "~/components/dashboard/Sidebar";
 import { RegistryOverview } from "~/components/members/RegistryOverview";
 import { MemberSearch } from "~/components/members/MemberSearch";
@@ -8,12 +10,13 @@ import { MembersTable } from "~/components/members/MembersTable";
 import { NoGroupYet } from "~/components/dashboard/NoGroupYet";
 import { Menu } from "lucide-react";
 
-export async function loader() {
-  return loadMembersData();
+export async function loader({ request }: LoaderFunctionArgs) {
+  const [data, currentUser] = await Promise.all([loadMembersData(), getCurrentUser(request)]);
+  return { ...data, currentUser };
 }
 
 export default function MembersPage() {
-  const { group, members } = useLoaderData<typeof loader>();
+  const { group, members, currentUser } = useLoaderData<typeof loader>();
   const [menuOpen, setMenuOpen] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -31,7 +34,7 @@ export default function MembersPage() {
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: "#f7f6f2" }}>
-      <Sidebar title={group.name} open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <Sidebar title={group.name} open={menuOpen} onClose={() => setMenuOpen(false)} currentUser={currentUser} />
 
       <main className="h-screen flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
         <div className="mb-4 flex items-center gap-3">
@@ -47,7 +50,12 @@ export default function MembersPage() {
 
         <MemberSearch value={query} onChange={setQuery} />
 
-        <MembersTable members={filtered} groupId={group.id} pendingCount={members.length - paidThisWeekCount} />
+        <MembersTable
+          members={filtered}
+          groupId={group.id}
+          pendingCount={members.length - paidThisWeekCount}
+          isAuthenticated={!!currentUser}
+        />
       </main>
     </div>
   );

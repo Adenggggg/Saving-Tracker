@@ -15,12 +15,14 @@ export function FundSettingsPanel({
   weeklyAmount,
   goalAmount,
   categories,
+  isAuthenticated,
 }: {
   groupId: string;
   name: string;
   weeklyAmount: number;
   goalAmount: number;
   categories: Category[];
+  isAuthenticated: boolean;
 }) {
   const fundFetcher = useFetcher<{ ok: boolean; reason?: string }>();
   const categoriesFetcher = useFetcher<{ ok: boolean; reason?: string }>();
@@ -63,6 +65,10 @@ export function FundSettingsPanel({
   }
 
   function handleSaveClick() {
+    if (!isAuthenticated) {
+      showToast("Please log in with your registered email to do this.", "error");
+      return;
+    }
     if (noChange) {
       showToast("No changes to save.", "info");
       return;
@@ -111,7 +117,8 @@ export function FundSettingsPanel({
                 type="text"
                 value={nameInput}
                 onChange={(e) => setNameInput(e.target.value)}
-                className="w-full rounded-lg border-2 px-3 py-2 text-sm outline-none"
+                disabled={!isAuthenticated}
+                className="w-full rounded-lg border-2 px-3 py-2 text-sm outline-none disabled:opacity-60"
                 style={{ borderColor: "#d8d2c2" }}
               />
             </div>
@@ -125,7 +132,8 @@ export function FundSettingsPanel({
                 min="1"
                 value={weeklyInput}
                 onChange={(e) => setWeeklyInput(e.target.value)}
-                className="w-full rounded-lg border-2 px-3 py-2 text-sm outline-none"
+                disabled={!isAuthenticated}
+                className="w-full rounded-lg border-2 px-3 py-2 text-sm outline-none disabled:opacity-60"
                 style={{ borderColor: "#d8d2c2" }}
               />
             </div>
@@ -139,7 +147,8 @@ export function FundSettingsPanel({
                 min="1"
                 value={goalInput}
                 onChange={(e) => setGoalInput(e.target.value)}
-                className="w-full rounded-lg border-2 px-3 py-2 text-sm outline-none"
+                disabled={!isAuthenticated}
+                className="w-full rounded-lg border-2 px-3 py-2 text-sm outline-none disabled:opacity-60"
                 style={{ borderColor: "#d8d2c2" }}
               />
             </div>
@@ -168,7 +177,8 @@ export function FundSettingsPanel({
                           type="text"
                           value={row.label}
                           onChange={(e) => updateRow(row.id, "label", e.target.value)}
-                          className="min-w-0 flex-1 bg-transparent text-xs font-semibold uppercase tracking-wide outline-none"
+                          disabled={!isAuthenticated}
+                          className="min-w-0 flex-1 bg-transparent text-xs font-semibold uppercase tracking-wide outline-none disabled:opacity-70"
                           style={{ color }}
                         />
                       </div>
@@ -177,7 +187,8 @@ export function FundSettingsPanel({
                         value={row.description}
                         onChange={(e) => updateRow(row.id, "description", e.target.value)}
                         placeholder="Optional description…"
-                        className="w-full truncate bg-transparent text-xs text-muted-foreground outline-none"
+                        disabled={!isAuthenticated}
+                        className="w-full truncate bg-transparent text-xs text-muted-foreground outline-none disabled:opacity-70"
                       />
                     </div>
                     <div className="flex shrink-0 items-baseline gap-0.5">
@@ -187,7 +198,8 @@ export function FundSettingsPanel({
                         max="100"
                         value={row.percent}
                         onChange={(e) => updateRow(row.id, "percent", e.target.value)}
-                        className="w-12 bg-transparent text-right text-xl font-bold outline-none"
+                        disabled={!isAuthenticated}
+                        className="w-12 bg-transparent text-right text-xl font-bold outline-none disabled:opacity-70"
                         style={{ color }}
                       />
                       <span className="text-sm font-semibold" style={{ color }}>%</span>
@@ -219,7 +231,7 @@ export function FundSettingsPanel({
       {/* Shared save action for both cards */}
       <button
         onClick={handleSaveClick}
-        disabled={saving}
+        disabled={saving || !isAuthenticated}
         className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60"
         style={{ background: "#b23b3b" }}
       >
