@@ -50,3 +50,24 @@ export function formatLongDate(dateStr: string) {
     year: "numeric",
   });
 }
+
+export function formatShortDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+export function listWeeksSinceStart(upToWeekStart: string) {
+  const start = new Date(SAVINGS_START_DATE);
+  const upTo = new Date(upToWeekStart);
+
+  const weeks: { weekNum: number; weekStart: string }[] = [];
+  let cursor = new Date(start);
+  let weekNum = 1;
+
+  while (cursor.getTime() <= upTo.getTime() && weekNum <= TOTAL_WEEKS) {
+    weeks.push({ weekNum, weekStart: cursor.toISOString().slice(0, 10) });
+    cursor.setDate(cursor.getDate() + 7);
+    weekNum++;
+  }
+
+  return weeks;
+}

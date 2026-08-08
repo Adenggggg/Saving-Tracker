@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Link, useFetcher } from "react-router";
+import { Link } from "react-router";
 import { History, Lock } from "lucide-react";
 import { AVATAR_COLORS, TOTAL_WEEKS } from "~/lib/dashboard-format";
-import { ConfirmDialog } from "~/components/ConfirmDialog";
+import { CatchUpDialog } from "~/components/dashboard/CatchUpDialog";
 
 type Member = { id: string; name: string; email: string };
+type MissedWeek = { weekNum: number; weekStart: string };
 
 export function ContributionStatus({
   members,
@@ -12,7 +13,7 @@ export function ContributionStatus({
   weekNum,
   groupId,
   weeklyAmount,
-  weekStart,
+  missedWeeksByMember,
   isAuthenticated,
 }: {
   members: Member[];
@@ -20,7 +21,7 @@ export function ContributionStatus({
   weekNum: number;
   groupId: string;
   weeklyAmount: number;
-  weekStart: string;
+  missedWeeksByMember: Record<string, MissedWeek[]>;
   isAuthenticated: boolean;
 }) {
   return (
@@ -57,7 +58,7 @@ export function ContributionStatus({
             color={AVATAR_COLORS[i % AVATAR_COLORS.length]}
             groupId={groupId}
             weeklyAmount={weeklyAmount}
-            weekStart={weekStart}
+            missedWeeks={missedWeeksByMember[member.id] ?? []}
             isAuthenticated={isAuthenticated}
           />
         ))}
@@ -72,7 +73,7 @@ function MemberRow({
   color,
   groupId,
   weeklyAmount,
-  weekStart,
+  missedWeeks,
   isAuthenticated,
 }: {
   member: Member;
@@ -80,24 +81,11 @@ function MemberRow({
   color: string;
   groupId: string;
   weeklyAmount: number;
-  weekStart: string;
+  missedWeeks: MissedWeek[];
   isAuthenticated: boolean;
 }) {
-  const fetcher = useFetcher();
-  const [confirmOpen, setConfirmOpen] = useState(false);
-
-  function handleConfirm() {
-    setConfirmOpen(false);
-    fetcher.submit(
-      {
-        userId: member.id,
-        groupId,
-        amount: String(weeklyAmount),
-        weekStart,
-      },
-      { method: "post", action: "/api/contribute" }
-    );
-  }
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const behindCount = missedWeeks.length;
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border py-3 last:border-0">
@@ -112,7 +100,11 @@ function MemberRow({
           <p className="truncate text-sm">{member.name}</p>
           <p className="flex items-center gap-1 text-xs" style={{ color: paid ? "#1f7a4d" : "#b23b3b" }}>
             <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: paid ? "#1f7a4d" : "#b23b3b" }} />
-            {paid ? "Paid this week" : "Pending payment"}
+            {paid
+              ? "Paid this week"
+              : behindCount > 1
+              ? `${behindCount} weeks behind`
+              : "Pending payment"}
           </p>
         </div>
       </div>
@@ -124,22 +116,22 @@ function MemberRow({
       ) : (
         <>
           <button
-            onClick={() => setConfirmOpen(true)}
-            disabled={!isAuthenticated || fetcher.state !== "idle"}
+            onClick={() => setDialogOpen(true)}
+            disabled={!isAuthenticated}
             className="shrink-0 rounded-full px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
             style={{ background: "#b23b3b" }}
           >
-            {fetcher.state !== "idle" ? "Saving…" : "Mark Paid"}
+            {behindCount > 1 ? "Catch Up" : "Mark Paid"}
           </button>
 
-          <ConfirmDialog
-            open={confirmOpen}
-            title="Confirm payment"
-            message={`Mark ${member.name} as paid ₱${weeklyAmount} for this week?`}
-            confirmLabel="Mark Paid"
-            confirmColor="#b23b3b"
-            onConfirm={handleConfirm}
-            onCancel={() => setConfirmOpen(false)}
+          <CatchUpDialog
+            open={dialogOpen}
+            onClose={() => setDialogOpen(false)}
+            memberName={member.name}
+            memberId={member.id}
+            groupId={groupId}
+            weeklyAmount={weeklyAmount}
+            missedWeeks={missedWeeks}
           />
         </>
       )}

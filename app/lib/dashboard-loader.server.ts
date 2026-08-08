@@ -1,7 +1,7 @@
 import { eq, and } from "drizzle-orm";
 import { db } from "../../db/client";
 import { groups, groupMembers, users, contributions } from "../../db/schema";
-import { currentWeekStart } from "~/lib/dashboard-format";
+import { currentWeekStart, listWeeksSinceStart } from "~/lib/dashboard-format";
 import { getBudgetCategories } from "~/lib/budget-categories.server";
 
 export async function loadDashboardData() {
@@ -15,6 +15,7 @@ export async function loadDashboardData() {
       weekStart: currentWeekStart(),
       totalSaved: 0,
       categories: [],
+      missedWeeksByMember: {} as Record<string, { weekNum: number; weekStart: string }[]>,
     };
   }
 
@@ -38,6 +39,15 @@ export async function loadDashboardData() {
 
   const totalSaved = allContributions.reduce((sum, c) => sum + c.amount, 0);
   const categories = await getBudgetCategories(group.id);
+  const allWeeks = listWeeksSinceStart(weekStart);
+  const missedWeeksByMember: Record<string, { weekNum: number; weekStart: string }[]> = {};
+
+  for (const member of members) {
+    const paidWeekStarts = new Set(
+      allContributions.filter((c) => c.userId === member.id).map((c) => c.weekStart)
+    );
+    missedWeeksByMember[member.id] = allWeeks.filter((w) => !paidWeekStarts.has(w.weekStart));
+  }
 
   return {
     group,
@@ -46,6 +56,7 @@ export async function loadDashboardData() {
     weekStart,
     totalSaved,
     categories,
+    missedWeeksByMember,
   };
 }
 

@@ -9,6 +9,7 @@ export default [
   route("auth/verify", "routes/auth.verify.ts"),
   route("logout", "routes/logout.tsx"),
   route("api/contribute", "routes/api.contribute.ts"),
+  route("api/catch-up", "routes/api.catch-up.ts"),
   route("api/remind-member", "routes/api.remind-member.ts"),
   route("api/remind-all", "routes/api.remind-all.ts"),
   route("api/update-fund", "routes/api.update-fund.ts"),

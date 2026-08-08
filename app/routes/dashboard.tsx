@@ -25,7 +25,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export default function Dashboard() {
-  const { group, members, paidUserIds, weekStart, totalSaved, categories, currentUser } =
+  const { group, members, paidUserIds, weekStart, totalSaved, categories, missedWeeksByMember, currentUser } =
     useLoaderData<typeof loader>();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -66,7 +66,7 @@ export default function Dashboard() {
           weekNum={weekNum}
           groupId={group.id}
           weeklyAmount={group.weeklyAmount}
-          weekStart={weekStart}
+          missedWeeksByMember={missedWeeksByMember}
           isAuthenticated={!!currentUser}
         />
       </main>
