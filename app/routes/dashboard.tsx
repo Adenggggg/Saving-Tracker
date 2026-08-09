@@ -46,7 +46,7 @@ export default function Dashboard() {
           onMenuClick={() => setMenuOpen(true)}
         />
 
-        <HeroBanner title={group.name} dateLabel={formatLongDate(SAVINGS_START_DATE)} />
+        <HeroBanner title={group.name} dateLabel={formatLongDate(weekStart)} />
 
         <StatCards
           totalSaved={totalSaved}

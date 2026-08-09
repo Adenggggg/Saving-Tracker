@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useFetcher } from "react-router";
+import { useFetcher, useRevalidator } from "react-router";
 import { X, Wallet } from "lucide-react";
 import { peso, formatShortDate } from "~/lib/dashboard-format";
 import { useToast } from "~/components/Toast";
@@ -25,11 +25,11 @@ export function CatchUpDialog({
 }) {
   const fetcher = useFetcher<{ ok: boolean; count?: number; reason?: string }>();
   const { showToast } = useToast();
+  const revalidator = useRevalidator();
 
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [amounts, setAmounts] = useState<Record<string, string>>({});
 
-  // Reset selections to "all checked, default amount" whenever the dialog opens fresh.
   useEffect(() => {
     if (open) {
       const nextSelected: Record<string, boolean> = {};
@@ -41,7 +41,6 @@ export function CatchUpDialog({
       setSelected(nextSelected);
       setAmounts(nextAmounts);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   useEffect(() => {
@@ -52,11 +51,11 @@ export function CatchUpDialog({
           "success"
         );
         onClose();
+        revalidator.revalidate();
       } else {
         showToast(fetcher.data.reason ?? "Couldn't record the payment.", "error");
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetcher.state, fetcher.data]);
 
   if (!open) return null;

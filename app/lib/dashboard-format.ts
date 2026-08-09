@@ -22,11 +22,11 @@ export function currentWeekStart() {
   const nowUtc = new Date();
   const pht = new Date(nowUtc.getTime() + PHT_OFFSET_MS);
 
-  const day = pht.getUTCDay();
-  const diff = pht.getUTCDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(Date.UTC(pht.getUTCFullYear(), pht.getUTCMonth(), diff));
+  const day = pht.getUTCDay(); // 0 = Sunday
+  const diff = pht.getUTCDate() - day;
+  const sunday = new Date(Date.UTC(pht.getUTCFullYear(), pht.getUTCMonth(), diff));
 
-  return monday.toISOString().slice(0, 10);
+  return sunday.toISOString().slice(0, 10);
 }
 
 export function daysUntilChristmas() {
