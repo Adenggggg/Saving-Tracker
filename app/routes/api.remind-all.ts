@@ -4,6 +4,7 @@ import { db } from "../../db/client";
 import { groups, groupMembers, users, contributions } from "../../db/schema";
 import { currentWeekStart } from "~/lib/dashboard-format";
 import { sendReminderEmail } from "~/lib/email.server";
+import { sendPushToUser } from "~/lib/push.server";
 import { getCurrentUser } from "~/lib/auth.server";
 import { logAudit } from "~/lib/audit.server";
 
@@ -41,7 +42,16 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   const results = await Promise.allSettled(
-    pending.map((m) => sendReminderEmail(m.email, m.name, group.name))
+    pending.map((m) =>
+      Promise.all([
+        sendReminderEmail(m.email, m.name, group.name),
+        sendPushToUser(m.id, {
+          title: `${group.name} reminder`,
+          body: "Your contribution for this week is still pending.",
+          url: "/members",
+        }),
+      ])
+    )
   );
 
   const sentCount = results.filter((r) => r.status === "fulfilled").length;

@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../../db/client";
 import { users, groups } from "../../db/schema";
 import { sendReminderEmail } from "~/lib/email.server";
+import { sendPushToUser } from "~/lib/push.server";
 import { getCurrentUser } from "~/lib/auth.server";
 import { logAudit } from "~/lib/audit.server";
 
@@ -23,7 +24,16 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   try {
-    await sendReminderEmail(user.email, user.name, group?.name ?? "Savings Group");
+    const groupName = group?.name ?? "Savings Group";
+
+    const [, pushedCount] = await Promise.all([
+      sendReminderEmail(user.email, user.name, groupName),
+      sendPushToUser(user.id, {
+        title: `${groupName} reminder`,
+        body: "Your contribution for this week is still pending.",
+        url: "/members",
+      }),
+    ]);
 
     if (group) {
       await logAudit({
@@ -31,7 +41,7 @@ export async function action({ request }: ActionFunctionArgs) {
         actorUserId: actor.id,
         actorName: actor.name,
         action: "remind_member",
-        detail: `${actor.name} sent a reminder email to ${user.name}.`,
+        detail: `${actor.name} sent a reminder to ${user.name} (email${pushedCount > 0 ? " + push" : ""}).`,
       });
     }
 

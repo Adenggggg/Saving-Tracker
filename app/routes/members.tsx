@@ -8,6 +8,7 @@ import { RegistryOverview } from "~/components/members/RegistryOverview";
 import { MemberSearch } from "~/components/members/MemberSearch";
 import { MembersTable } from "~/components/members/MembersTable";
 import { NoGroupYet } from "~/components/dashboard/NoGroupYet";
+import { PushOptIn } from "~/components/PushOptIn";
 import { Menu } from "lucide-react";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -45,6 +46,8 @@ export default function MembersPage() {
             REGISTRY OVERVIEW
           </p>
         </div>
+
+        {currentUser && <PushOptIn />}
 
         <RegistryOverview totalMembers={members.length} paidThisWeekCount={paidThisWeekCount} />
 
