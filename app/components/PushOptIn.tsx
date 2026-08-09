@@ -42,11 +42,20 @@ export function PushOptIn() {
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
 
-      await fetch("/api/push-subscribe", {
+      const res = await fetch("/api/push-subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ subscription: subscription.toJSON() }),
       });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.ok) {
+        console.error("push-subscribe failed:", res.status, data);
+        setStatus("default");
+        showToast(data?.reason ?? `Couldn't save subscription (${res.status}).`, "error");
+        return;
+      }
 
       setStatus("granted");
       showToast("Notifications enabled.", "success");
