@@ -22,8 +22,46 @@ export function PushOptIn() {
       setStatus("unsupported");
       return;
     }
-    setStatus(Notification.permission as "default" | "granted" | "denied");
+
+    const permission = Notification.permission;
+
+    if (permission === "granted") {
+      subscribeSilently();
+    } else {
+      setStatus(permission as "default" | "denied");
+    }
   }, []);
+
+  async function subscribeSilently() {
+    try {
+      const registration = await navigator.serviceWorker.register("/sw.js");
+      await navigator.serviceWorker.ready;
+
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+
+      const res = await fetch("/api/push-subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subscription: subscription.toJSON() }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data?.ok) {
+        console.error("Silent re-subscribe failed:", res.status, data);
+        setStatus("default");
+        return;
+      }
+
+      setStatus("granted");
+    } catch (err) {
+      console.error("Silent re-subscribe threw:", err);
+      setStatus("default");
+    }
+  }
 
   async function handleEnable() {
     setStatus("loading");
