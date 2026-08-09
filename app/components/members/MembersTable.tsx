@@ -10,10 +10,12 @@ export function MembersTable({
   members,
   groupId,
   pendingCount,
+  isAuthenticated,
 }: {
   members: MemberRowType[];
   groupId: string;
   pendingCount: number;
+  isAuthenticated: boolean;
 }) {
   const fetcher = useFetcher<{ ok: boolean; sentCount?: number; reason?: string }>();
   const { showToast } = useToast();
@@ -70,7 +72,7 @@ export function MembersTable({
           </thead>
           <tbody>
             {members.map((member, i) => (
-              <MemberRow key={member.id} member={member} index={i} />
+              <MemberRow key={member.id} member={member} index={i} isAuthenticated={isAuthenticated} />
             ))}
           </tbody>
         </table>
