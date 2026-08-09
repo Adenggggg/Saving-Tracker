@@ -146,10 +146,12 @@ function MemberRow({
             <button
               onClick={() => setUndoConfirmOpen(true)}
               disabled={undoFetcher.state !== "idle"}
-              className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-50"
+              title={`Undo ${member.name}'s payment`}
               aria-label={`Undo ${member.name}'s payment`}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-[#fbeaea] disabled:opacity-50"
+              style={{ color: "#b23b3b" }}
             >
-              <Undo2 size={12} />
+              <Undo2 size={14} />
             </button>
           )}
 
