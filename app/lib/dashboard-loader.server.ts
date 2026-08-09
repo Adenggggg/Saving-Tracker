@@ -12,6 +12,7 @@ export async function loadDashboardData() {
       group: null,
       members: [],
       paidUserIds: [],
+      contributionIdThisWeek: {} as Record<string, string>,
       weekStart: currentWeekStart(),
       totalSaved: 0,
       categories: [],
@@ -39,6 +40,12 @@ export async function loadDashboardData() {
 
   const totalSaved = allContributions.reduce((sum, c) => sum + c.amount, 0);
   const categories = await getBudgetCategories(group.id);
+
+  const contributionIdThisWeek: Record<string, string> = {};
+  for (const row of paidRows) {
+    contributionIdThisWeek[row.userId] = row.id;
+  }
+
   const allWeeks = listWeeksSinceStart(weekStart);
   const missedWeeksByMember: Record<string, { weekNum: number; weekStart: string }[]> = {};
 
@@ -53,6 +60,7 @@ export async function loadDashboardData() {
     group,
     members,
     paidUserIds: paidRows.map((r) => r.userId),
+    contributionIdThisWeek,
     weekStart,
     totalSaved,
     categories,

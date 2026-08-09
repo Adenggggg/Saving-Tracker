@@ -1,8 +1,10 @@
-import { useState } from "react";
-import { Link } from "react-router";
-import { History, Lock } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useFetcher, useRevalidator } from "react-router";
+import { History, Lock, Undo2 } from "lucide-react";
 import { AVATAR_COLORS, TOTAL_WEEKS } from "~/lib/dashboard-format";
 import { CatchUpDialog } from "~/components/dashboard/CatchUpDialog";
+import { useToast } from "~/components/Toast";
+import { ConfirmDialog } from "~/components/ConfirmDialog";
 
 type Member = { id: string; name: string; email: string };
 type MissedWeek = { weekNum: number; weekStart: string };
@@ -10,6 +12,7 @@ type MissedWeek = { weekNum: number; weekStart: string };
 export function ContributionStatus({
   members,
   paidUserIds,
+  contributionIdThisWeek,
   weekNum,
   groupId,
   weeklyAmount,
@@ -18,6 +21,7 @@ export function ContributionStatus({
 }: {
   members: Member[];
   paidUserIds: string[];
+  contributionIdThisWeek: Record<string, string>;
   weekNum: number;
   groupId: string;
   weeklyAmount: number;
@@ -55,6 +59,7 @@ export function ContributionStatus({
             key={member.id}
             member={member}
             paid={paidUserIds.includes(member.id)}
+            contributionId={contributionIdThisWeek[member.id]}
             color={AVATAR_COLORS[i % AVATAR_COLORS.length]}
             groupId={groupId}
             weeklyAmount={weeklyAmount}
@@ -70,6 +75,7 @@ export function ContributionStatus({
 function MemberRow({
   member,
   paid,
+  contributionId,
   color,
   groupId,
   weeklyAmount,
@@ -78,6 +84,7 @@ function MemberRow({
 }: {
   member: Member;
   paid: boolean;
+  contributionId?: string;
   color: string;
   groupId: string;
   weeklyAmount: number;
@@ -85,7 +92,28 @@ function MemberRow({
   isAuthenticated: boolean;
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [undoConfirmOpen, setUndoConfirmOpen] = useState(false);
+  const undoFetcher = useFetcher<{ ok: boolean; reason?: string }>();
+  const revalidator = useRevalidator();
+  const { showToast } = useToast();
   const behindCount = missedWeeks.length;
+
+  useEffect(() => {
+    if (undoFetcher.state === "idle" && undoFetcher.data) {
+      if (undoFetcher.data.ok) {
+        showToast(`Undid ${member.name}'s payment for this week.`, "success");
+        revalidator.revalidate();
+      } else {
+        showToast(undoFetcher.data.reason ?? "Couldn't undo the payment.", "error");
+      }
+    }
+  }, [undoFetcher.state, undoFetcher.data]);
+
+  function handleUndo() {
+    setUndoConfirmOpen(false);
+    if (!contributionId) return;
+    undoFetcher.submit({ contributionId }, { method: "post", action: "/api/undo-payment" });
+  }
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border py-3 last:border-0">
@@ -110,9 +138,31 @@ function MemberRow({
       </div>
 
       {paid ? (
-        <span className="shrink-0 rounded-full px-4 py-1.5 text-xs font-medium" style={{ background: "#e7f5ee", color: "#1f7a4d" }}>
-          Paid
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="rounded-full px-4 py-1.5 text-xs font-medium" style={{ background: "#e7f5ee", color: "#1f7a4d" }}>
+            Paid
+          </span>
+          {isAuthenticated && contributionId && (
+            <button
+              onClick={() => setUndoConfirmOpen(true)}
+              disabled={undoFetcher.state !== "idle"}
+              className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-50"
+              aria-label={`Undo ${member.name}'s payment`}
+            >
+              <Undo2 size={12} />
+            </button>
+          )}
+
+          <ConfirmDialog
+            open={undoConfirmOpen}
+            title="Undo this payment?"
+            message={`This removes ${member.name}'s payment for this week. This can't be undone.`}
+            confirmLabel="Undo Payment"
+            confirmColor="#b23b3b"
+            onConfirm={handleUndo}
+            onCancel={() => setUndoConfirmOpen(false)}
+          />
+        </div>
       ) : (
         <>
           <button

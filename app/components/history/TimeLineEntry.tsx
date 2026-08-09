@@ -1,14 +1,49 @@
-import { Gift, Star, CheckCircle2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useFetcher, useRevalidator } from "react-router";
+import { Gift, Star, CheckCircle2, Undo2 } from "lucide-react";
 import { peso } from "~/lib/dashboard-format";
 import type { TimelineEntry as TimelineEntryType } from "~/lib/history-loader.server";
+import { useToast } from "~/components/Toast";
+import { ConfirmDialog } from "~/components/ConfirmDialog";
 
 const ACCENTS = [
   { icon: "#0e3d2c", iconBg: "#0e3d2c", cardBg: "#ffffff", bar: "#0e3d2c", dot: "#0e3d2c" },
   { icon: "#8a6d1f", iconBg: "#c9a227", cardBg: "#ffffff", bar: "#c9a227", dot: "#c9a227" },
 ];
 
-export function TimelineEntry({ entry, accentIndex = 0 }: { entry: TimelineEntryType; accentIndex?: number }) {
+export function TimelineEntry({
+  entry,
+  accentIndex = 0,
+  isAuthenticated = false,
+}: {
+  entry: TimelineEntryType;
+  accentIndex?: number;
+  isAuthenticated?: boolean;
+}) {
   const accent = ACCENTS[accentIndex % ACCENTS.length];
+  const fetcher = useFetcher<{ ok: boolean; reason?: string }>();
+  const revalidator = useRevalidator();
+  const { showToast } = useToast();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  function handleUndo() {
+    setConfirmOpen(false);
+    fetcher.submit(
+      { contributionId: entry.type === "contribution" ? entry.id : "" },
+      { method: "post", action: "/api/undo-payment" }
+    );
+  }
+
+  useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data) {
+      if (fetcher.data.ok) {
+        showToast("Payment undone.", "success");
+        revalidator.revalidate();
+      } else {
+        showToast(fetcher.data.reason ?? "Couldn't undo the payment.", "error");
+      }
+    }
+  }, [fetcher.state, fetcher.data]);
 
   if (entry.type === "milestone") {
     return (
@@ -39,7 +74,7 @@ export function TimelineEntry({ entry, accentIndex = 0 }: { entry: TimelineEntry
   return (
     <div className="relative overflow-hidden rounded-2xl bg-white p-5 pl-6 shadow-sm">
       <div className="absolute bottom-0 left-0 top-0 w-1.5" style={{ background: accent.bar }} />
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <div
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
@@ -60,10 +95,33 @@ export function TimelineEntry({ entry, accentIndex = 0 }: { entry: TimelineEntry
             </p>
           </div>
         </div>
-        <p className="text-base font-bold" style={{ color: accent.icon }}>
-          {peso(entry.amount)}
-        </p>
+
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <p className="text-base font-bold" style={{ color: accent.icon }}>
+            {peso(entry.amount)}
+          </p>
+          {isAuthenticated && (
+            <button
+              onClick={() => setConfirmOpen(true)}
+              disabled={fetcher.state !== "idle"}
+              className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-50"
+            >
+              <Undo2 size={11} />
+              Undo
+            </button>
+          )}
+        </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Undo this payment?"
+        message={`This permanently removes ${entry.memberName}'s ${peso(entry.amount)} payment for this week. This can't be undone.`}
+        confirmLabel="Undo Payment"
+        confirmColor="#b23b3b"
+        onConfirm={handleUndo}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   );
 }

@@ -23,7 +23,13 @@ function dayLabel(iso: string) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }).toUpperCase();
 }
 
-export function Timeline({ entries }: { entries: TimelineEntryType[] }) {
+export function Timeline({
+  entries,
+  isAuthenticated = false,
+}: {
+  entries: TimelineEntryType[];
+  isAuthenticated?: boolean;
+}) {
   if (entries.length === 0) {
     return (
       <div className="p-8 text-center">
@@ -85,7 +91,7 @@ export function Timeline({ entries }: { entries: TimelineEntryType[] }) {
                   />
                   <div className="min-w-0 flex-1">
                     <p className="mb-1 text-xs text-muted-foreground">{formatTime(entry.at)}</p>
-                    <TimelineEntry entry={entry} accentIndex={accentIndex} />
+                    <TimelineEntry entry={entry} accentIndex={accentIndex} isAuthenticated={isAuthenticated} />
                   </div>
                 </div>
               </div>
@@ -105,7 +111,7 @@ export function Timeline({ entries }: { entries: TimelineEntryType[] }) {
                 <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
                   <div className={onLeft ? "" : "flex justify-end"}>
                     {onLeft ? (
-                      <TimelineEntry entry={entry} accentIndex={accentIndex} />
+                      <TimelineEntry entry={entry} accentIndex={accentIndex} isAuthenticated={isAuthenticated} />
                     ) : (
                       <p className="text-xs text-muted-foreground">{formatTime(entry.at)}</p>
                     )}
@@ -117,7 +123,7 @@ export function Timeline({ entries }: { entries: TimelineEntryType[] }) {
                     {onLeft ? (
                       <p className="text-xs text-muted-foreground">{formatTime(entry.at)}</p>
                     ) : (
-                      <TimelineEntry entry={entry} accentIndex={accentIndex} />
+                      <TimelineEntry entry={entry} accentIndex={accentIndex} isAuthenticated={isAuthenticated} />
                     )}
                   </div>
                 </div>

@@ -25,8 +25,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export default function Dashboard() {
-  const { group, members, paidUserIds, weekStart, totalSaved, categories, missedWeeksByMember, currentUser } =
-    useLoaderData<typeof loader>();
+  const {
+    group,
+    members,
+    paidUserIds,
+    contributionIdThisWeek,
+    weekStart,
+    totalSaved,
+    categories,
+    missedWeeksByMember,
+    currentUser,
+  } = useLoaderData<typeof loader>();
   const [menuOpen, setMenuOpen] = useState(false);
 
   if (!group) return <NoGroupYet />;
@@ -63,6 +72,7 @@ export default function Dashboard() {
         <ContributionStatus
           members={members}
           paidUserIds={paidUserIds}
+          contributionIdThisWeek={contributionIdThisWeek}
           weekNum={weekNum}
           groupId={group.id}
           weeklyAmount={group.weeklyAmount}

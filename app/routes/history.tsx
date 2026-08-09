@@ -87,7 +87,7 @@ export default function HistoryPage() {
             />
           </div>
 
-          <Timeline entries={filteredEntries} />
+          <Timeline entries={filteredEntries} isAuthenticated={!!currentUser} />
 
           <HistoryStatsFooter totalContributed={totalContributed} />
         </div>
