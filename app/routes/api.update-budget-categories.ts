@@ -2,11 +2,12 @@ import type { ActionFunctionArgs } from "react-router";
 import { eq } from "drizzle-orm";
 import { db } from "../../db/client";
 import { budgetCategories } from "../../db/schema";
-import { getUserId } from "~/lib/session.server";
+import { getCurrentUser } from "~/lib/auth.server";
+import { logAudit } from "~/lib/audit.server";
 
 export async function action({ request }: ActionFunctionArgs) {
-  const requesterId = await getUserId(request);
-  if (!requesterId) {
+  const actor = await getCurrentUser(request);
+  if (!actor) {
     return { ok: false, reason: "Please log in with your registered email to do this." };
   }
 
@@ -31,6 +32,21 @@ export async function action({ request }: ActionFunctionArgs) {
       .update(budgetCategories)
       .set({ label: cat.label.trim(), description: cat.description.trim() || null, percent: cat.percent })
       .where(eq(budgetCategories.id, cat.id));
+  }
+
+  const firstCategory = (
+    await db.select().from(budgetCategories).where(eq(budgetCategories.id, body.categories[0].id))
+  )[0];
+
+  if (firstCategory) {
+    const summary = body.categories.map((c) => `${c.label} (${c.percent}%)`).join(", ");
+    await logAudit({
+      groupId: firstCategory.groupId,
+      actorUserId: actor.id,
+      actorName: actor.name,
+      action: "update_budget_categories",
+      detail: `${actor.name} updated the fund breakdown: ${summary}.`,
+    });
   }
 
   return { ok: true };

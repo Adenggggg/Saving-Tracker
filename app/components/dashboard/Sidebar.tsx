@@ -1,10 +1,11 @@
 import { Link, Form, useLocation } from "react-router";
-import { LayoutDashboard, Users, History, Settings, Gift, X, LogIn, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, History, Settings, ScrollText, Gift, X, LogIn, LogOut } from "lucide-react";
 
 const NAV = [
   { Icon: LayoutDashboard, label: "Dashboard", to: "/" },
   { Icon: Users, label: "Members", to: "/members" },
   { Icon: History, label: "History", to: "/history" },
+  { Icon: ScrollText, label: "Activity Log", to: "/activity-log" },
   { Icon: Settings, label: "Settings", to: "/settings" },
 ];
 

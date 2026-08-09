@@ -4,6 +4,7 @@ export default [
   index("routes/dashboard.tsx"),
   route("members", "routes/members.tsx"),
   route("history", "routes/history.tsx"),
+  route("activity-log", "routes/activity-log.tsx"),
   route("settings", "routes/settings.tsx"),
   route("login", "routes/login.tsx"),
   route("auth/verify", "routes/auth.verify.ts"),

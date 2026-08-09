@@ -72,6 +72,20 @@ export const magicLinkTokens = pgTable("magic_link_tokens", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const auditLogs = pgTable("audit_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  groupId: uuid("group_id")
+    .notNull()
+    .references(() => groups.id, { onDelete: "cascade" }),
+  actorUserId: uuid("actor_user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  actorName: text("actor_name").notNull(),
+  action: text("action").notNull(),
+  detail: text("detail").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const pushSubscriptions = pgTable("push_subscriptions", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")

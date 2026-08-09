@@ -3,11 +3,12 @@ import { eq } from "drizzle-orm";
 import { db } from "../../db/client";
 import { users, groups } from "../../db/schema";
 import { sendReminderEmail } from "~/lib/email.server";
-import { getUserId } from "~/lib/session.server";
+import { getCurrentUser } from "~/lib/auth.server";
+import { logAudit } from "~/lib/audit.server";
 
 export async function action({ request }: ActionFunctionArgs) {
-  const requesterId = await getUserId(request);
-  if (!requesterId) {
+  const actor = await getCurrentUser(request);
+  if (!actor) {
     return { ok: false, reason: "Please log in with your registered email to do this." };
   }
 
@@ -23,6 +24,17 @@ export async function action({ request }: ActionFunctionArgs) {
 
   try {
     await sendReminderEmail(user.email, user.name, group?.name ?? "Savings Group");
+
+    if (group) {
+      await logAudit({
+        groupId: group.id,
+        actorUserId: actor.id,
+        actorName: actor.name,
+        action: "remind_member",
+        detail: `${actor.name} sent a reminder email to ${user.name}.`,
+      });
+    }
+
     return { ok: true };
   } catch (err) {
     console.error("Failed to send reminder email:", err);
