@@ -17,4 +17,5 @@ export default [
   route("api/update-fund", "routes/api.update-fund.ts"),
   route("api/update-budget-categories", "routes/api.update-budget-categories.ts"),
   route("api/reset-fund", "routes/api.reset-fund.ts"),
+  route("api/push-subscribe", "routes/api.push-subscribe.ts"),
 ] satisfies RouteConfig;
