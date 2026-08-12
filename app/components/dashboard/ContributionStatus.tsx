@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useFetcher, useRevalidator } from "react-router";
 import { History, Lock, Undo2 } from "lucide-react";
 import { AVATAR_COLORS, TOTAL_WEEKS } from "~/lib/dashboard-format";
@@ -8,6 +8,93 @@ import { ConfirmDialog } from "~/components/ConfirmDialog";
 
 type Member = { id: string; name: string; email: string };
 type MissedWeek = { weekNum: number; weekStart: string };
+
+function fireConfetti(originX: number, originY: number) {
+  const canvas = document.createElement("canvas");
+  canvas.style.position = "fixed";
+  canvas.style.left = "0";
+  canvas.style.top = "0";
+  canvas.style.width = "100vw";
+  canvas.style.height = "100vh";
+  canvas.style.pointerEvents = "none";
+  canvas.style.zIndex = "9999";
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = window.innerWidth * dpr;
+  canvas.height = window.innerHeight * dpr;
+  document.body.appendChild(canvas);
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    canvas.remove();
+    return;
+  }
+  ctx.scale(dpr, dpr);
+
+  const colors = ["#b23b3b", "#1f7a4d", "#e7a83b", "#3b6db2", "#8a4fb2"];
+  const count = 60;
+  const particles = Array.from({ length: count }).map(() => {
+    const angle = (Math.PI / 2) + (Math.random() - 0.5) * (Math.PI * 0.9);
+    const speed = 4 + Math.random() * 6;
+    return {
+      x: originX,
+      y: originY,
+      vx: Math.cos(angle) * speed,
+      vy: -Math.abs(Math.sin(angle) * speed) - 2,
+      size: 4 + Math.random() * 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rotation: Math.random() * Math.PI * 2,
+      rotationSpeed: (Math.random() - 0.5) * 0.3,
+      shape: Math.random() > 0.5 ? "rect" : "circle",
+      life: 1,
+    };
+  });
+
+  const gravity = 0.18;
+  const drag = 0.995;
+  let frame = 0;
+  const maxFrames = 90;
+
+  function tick() {
+    if (!ctx) return;
+    frame++;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    let anyAlive = false;
+    for (const p of particles) {
+      p.vx *= drag;
+      p.vy = p.vy * drag + gravity;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rotation += p.rotationSpeed;
+      p.life = Math.max(0, 1 - frame / maxFrames);
+
+      if (p.life <= 0) continue;
+      anyAlive = true;
+
+      ctx.save();
+      ctx.globalAlpha = p.life;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rotation);
+      ctx.fillStyle = p.color;
+      if (p.shape === "rect") {
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+      } else {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    if (anyAlive && frame < maxFrames) {
+      requestAnimationFrame(tick);
+    } else {
+      canvas.remove();
+    }
+  }
+
+  requestAnimationFrame(tick);
+}
 
 export function ContributionStatus({
   members,
@@ -98,6 +185,19 @@ function MemberRow({
   const { showToast } = useToast();
   const behindCount = missedWeeks.length;
 
+  const rowRef = useRef<HTMLDivElement>(null);
+  const wasPaidRef = useRef(paid);
+
+  // Fire confetti the moment this row transitions from unpaid -> paid,
+  // regardless of whether that happened via the dialog's own fetcher.
+  useEffect(() => {
+    if (!wasPaidRef.current && paid && rowRef.current) {
+      const rect = rowRef.current.getBoundingClientRect();
+      fireConfetti(rect.left + rect.width * 0.85, rect.top + rect.height / 2);
+    }
+    wasPaidRef.current = paid;
+  }, [paid]);
+
   useEffect(() => {
     if (undoFetcher.state === "idle" && undoFetcher.data) {
       if (undoFetcher.data.ok) {
@@ -116,7 +216,7 @@ function MemberRow({
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border py-3 last:border-0">
+    <div ref={rowRef} className="flex flex-wrap items-center justify-between gap-2 border-b border-border py-3 last:border-0">
       <div className="flex min-w-0 items-center gap-3">
         <div
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-medium text-white"
