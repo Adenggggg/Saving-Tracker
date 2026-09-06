@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useFetcher, useRevalidator } from "react-router";
-import { X, Wallet, ArrowRight } from "lucide-react";
+import { X, Wallet, Clock, TrendingUp } from "lucide-react";
 import { peso, formatShortDate } from "~/lib/dashboard-format";
 import { useToast } from "~/components/Toast";
 
@@ -26,13 +26,27 @@ export function CatchUpDialog({
   const fetcher = useFetcher<{ ok: boolean; count?: number; reason?: string }>();
   const { showToast } = useToast();
   const revalidator = useRevalidator();
-  const [amountInput, setAmountInput] = useState(String(weeklyAmount));
+
+  const dueWeeks = missedWeeks.filter((w) => w.status === "due");
+  const advanceWeeks = missedWeeks.filter((w) => w.status === "advance");
+
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [amounts, setAmounts] = useState<Record<string, string>>({});
+  const [advanceAmountInput, setAdvanceAmountInput] = useState("0");
 
   useEffect(() => {
     if (open) {
-      setAmountInput(String(weeklyAmount));
+      const nextSelected: Record<string, boolean> = {};
+      const nextAmounts: Record<string, string> = {};
+      for (const w of dueWeeks) {
+        nextSelected[w.weekStart] = true;
+        nextAmounts[w.weekStart] = String(weeklyAmount);
+      }
+      setSelected(nextSelected);
+      setAmounts(nextAmounts);
+      setAdvanceAmountInput("0");
     }
-  }, [open, weeklyAmount]);
+  }, [open]);
 
   useEffect(() => {
     if (fetcher.state === "idle" && fetcher.data) {
@@ -51,29 +65,40 @@ export function CatchUpDialog({
 
   if (!open) return null;
 
-  const amount = Number(amountInput) || 0;
-  const weeksCovered = Math.min(Math.floor(amount / weeklyAmount), missedWeeks.length);
-  const coveredWeeks = missedWeeks.slice(0, weeksCovered);
-  const remainder = amount - weeksCovered * weeklyAmount;
-  const dueCovered = coveredWeeks.filter((w) => w.status === "due").length;
-  const advanceCovered = coveredWeeks.length - dueCovered;
+  const selectedDueWeeks = dueWeeks.filter((w) => selected[w.weekStart]);
+  const dueTotal = selectedDueWeeks.reduce((sum, w) => sum + (Number(amounts[w.weekStart]) || 0), 0);
 
-  function setWeeks(n: number) {
-    const clamped = Math.max(0, Math.min(n, missedWeeks.length));
-    setAmountInput(String(clamped * weeklyAmount));
+  const advanceAmount = Number(advanceAmountInput) || 0;
+  const advanceWeeksCovered = Math.min(Math.floor(advanceAmount / weeklyAmount), advanceWeeks.length);
+  const coveredAdvanceWeeks = advanceWeeks.slice(0, advanceWeeksCovered);
+  const advanceRemainder = advanceAmount - advanceWeeksCovered * weeklyAmount;
+
+  const grandTotal = dueTotal + advanceWeeksCovered * weeklyAmount;
+  const totalWeeksSelected = selectedDueWeeks.length + advanceWeeksCovered;
+
+  function toggleDue(weekStart: string) {
+    setSelected((prev) => ({ ...prev, [weekStart]: !prev[weekStart] }));
+  }
+
+  function updateDueAmount(weekStart: string, value: string) {
+    setAmounts((prev) => ({ ...prev, [weekStart]: value }));
   }
 
   function handleSubmit() {
-    if (weeksCovered === 0) {
-      showToast(`Enter at least ${peso(weeklyAmount)} to cover one week.`, "error");
+    if (totalWeeksSelected === 0) {
+      showToast("Select at least one week.", "error");
       return;
     }
+    const entries = [
+      ...selectedDueWeeks.map((w) => ({
+        weekStart: w.weekStart,
+        amount: Number(amounts[w.weekStart]) || 0,
+      })),
+      ...coveredAdvanceWeeks.map((w) => ({ weekStart: w.weekStart, amount: weeklyAmount })),
+    ];
+
     fetcher.submit(
-      {
-        userId: memberId,
-        groupId,
-        entries: coveredWeeks.map((w) => ({ weekStart: w.weekStart, amount: weeklyAmount })),
-      },
+      { userId: memberId, groupId, entries },
       { method: "post", action: "/api/catch-up", encType: "application/json" }
     );
   }
@@ -90,76 +115,101 @@ export function CatchUpDialog({
           </button>
         </div>
         <p className="mb-4 text-xs text-muted-foreground">
-          Enter how much {memberName} is paying — this covers as many weeks as it can, earliest first.
+          Select which due weeks to mark paid, and optionally pay ahead for upcoming weeks.
         </p>
 
-        <label className="mb-1.5 block text-xs font-semibold" style={{ color: "#0e3d2c" }}>
-          Amount Paid (₱)
-        </label>
-        <input
-          type="number"
-          min="0"
-          step={weeklyAmount}
-          value={amountInput}
-          onChange={(e) => setAmountInput(e.target.value)}
-          className="w-full rounded-lg border-2 px-3 py-2 text-lg font-semibold outline-none"
-          style={{ borderColor: "#d8d2c2", color: "#0e3d2c" }}
-        />
+        <div className="max-h-72 space-y-4 overflow-y-auto pr-1">
+          {dueWeeks.length > 0 && (
+            <div>
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold" style={{ color: "#b23b3b" }}>
+                <Clock size={12} />
+                DUE ({dueWeeks.length})
+              </p>
+              <div className="space-y-2">
+                {dueWeeks.map((w) => (
+                  <label key={w.weekStart} className="flex items-center gap-3 rounded-lg border border-border p-2.5">
+                    <input
+                      type="checkbox"
+                      checked={!!selected[w.weekStart]}
+                      onChange={() => toggleDue(w.weekStart)}
+                      className="h-4 w-4 shrink-0 accent-[#0e3d2c]"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm">
+                        Week {w.weekNum} <span className="text-muted-foreground">· {formatShortDate(w.weekStart)}</span>
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <span className="text-xs text-muted-foreground">₱</span>
+                      <input
+                        type="number"
+                        min="1"
+                        value={amounts[w.weekStart] ?? ""}
+                        onChange={(e) => updateDueAmount(w.weekStart, e.target.value)}
+                        disabled={!selected[w.weekStart]}
+                        className="w-16 rounded-md border border-border px-1.5 py-1 text-right text-xs outline-none disabled:opacity-40"
+                      />
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
-        <div className="mt-2 flex items-center gap-2">
-          <button
-            onClick={() => setWeeks(weeksCovered - 1)}
-            className="rounded-md border border-border px-2 py-1 text-xs hover:bg-muted"
-          >
-            − week
-          </button>
-          <button
-            onClick={() => setWeeks(weeksCovered + 1)}
-            className="rounded-md border border-border px-2 py-1 text-xs hover:bg-muted"
-          >
-            + week
-          </button>
-          <span className="text-xs text-muted-foreground">(₱{weeklyAmount} / week)</span>
+          {advanceWeeks.length > 0 && (
+            <div>
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold" style={{ color: "#2563a8" }}>
+                <TrendingUp size={12} />
+                PAY IN ADVANCE (OPTIONAL)
+              </p>
+              <div className="rounded-lg border border-border p-3">
+                <label className="mb-1.5 block text-xs text-muted-foreground">
+                  Advance amount (₱{weeklyAmount}/week)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step={weeklyAmount}
+                  value={advanceAmountInput}
+                  onChange={(e) => setAdvanceAmountInput(e.target.value)}
+                  className="w-full rounded-md border border-border px-2 py-1.5 text-sm outline-none"
+                />
+
+                {advanceWeeksCovered > 0 ? (
+                  <p className="mt-2 text-xs" style={{ color: "#2563a8" }}>
+                    Covers {advanceWeeksCovered} week{advanceWeeksCovered === 1 ? "" : "s"} ahead — Week{" "}
+                    {coveredAdvanceWeeks[0].weekNum}
+                    {coveredAdvanceWeeks.length > 1 && ` – ${coveredAdvanceWeeks[coveredAdvanceWeeks.length - 1].weekNum}`}
+                    {" "}({formatShortDate(coveredAdvanceWeeks[0].weekStart)}
+                    {coveredAdvanceWeeks.length > 1 &&
+                      ` – ${formatShortDate(coveredAdvanceWeeks[coveredAdvanceWeeks.length - 1].weekStart)}`}
+                    )
+                  </p>
+                ) : (
+                  advanceAmount > 0 && (
+                    <p className="mt-2 text-xs text-muted-foreground">Not enough yet for a full week ahead.</p>
+                  )
+                )}
+                {advanceRemainder > 0 && (
+                  <p className="mt-1 text-xs" style={{ color: "#b23b3b" }}>
+                    {peso(advanceRemainder)} left over.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="mt-4 rounded-lg p-3" style={{ background: "#eef4ef" }}>
-          {weeksCovered === 0 ? (
-            <p className="text-xs" style={{ color: "#b23b3b" }}>
-              Not enough for a full week yet.
-            </p>
-          ) : (
-            <>
-              <div className="flex items-center gap-2 text-sm font-medium" style={{ color: "#0e3d2c" }}>
-                <Wallet size={15} />
-                Covers {weeksCovered} week{weeksCovered === 1 ? "" : "s"}
-                {dueCovered > 0 && advanceCovered > 0 && (
-                  <span className="text-xs font-normal text-muted-foreground">
-                    ({dueCovered} due + {advanceCovered} in advance)
-                  </span>
-                )}
-              </div>
-              <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                Week {coveredWeeks[0].weekNum} · {formatShortDate(coveredWeeks[0].weekStart)}
-                {coveredWeeks.length > 1 && (
-                  <>
-                    <ArrowRight size={11} />
-                    Week {coveredWeeks[coveredWeeks.length - 1].weekNum} ·{" "}
-                    {formatShortDate(coveredWeeks[coveredWeeks.length - 1].weekStart)}
-                  </>
-                )}
-              </div>
-            </>
-          )}
-          {remainder > 0 && (
-            <p className="mt-1.5 text-xs" style={{ color: "#b23b3b" }}>
-              {peso(remainder)} left over — not enough for another full week.
-            </p>
-          )}
-          {weeksCovered === missedWeeks.length && missedWeeks.length > 0 && (
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              That's every available week — fully caught up and paid ahead.
-            </p>
-          )}
+        <div className="mt-4 flex items-center justify-between rounded-lg p-3" style={{ background: "#eef4ef" }}>
+          <div className="flex items-center gap-2">
+            <Wallet size={15} style={{ color: "#0e3d2c" }} />
+            <span className="text-xs font-medium" style={{ color: "#0e3d2c" }}>
+              Total ({totalWeeksSelected} week{totalWeeksSelected === 1 ? "" : "s"})
+            </span>
+          </div>
+          <span className="text-sm font-semibold" style={{ color: "#0e3d2c" }}>
+            {peso(grandTotal)}
+          </span>
         </div>
 
         <div className="mt-4 flex justify-end gap-2">
@@ -171,7 +221,7 @@ export function CatchUpDialog({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={fetcher.state !== "idle" || weeksCovered === 0}
+            disabled={fetcher.state !== "idle" || totalWeeksSelected === 0}
             className="rounded-full px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             style={{ background: "#b23b3b" }}
           >
