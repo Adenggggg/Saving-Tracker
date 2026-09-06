@@ -1,7 +1,5 @@
 export const TOTAL_WEEKS = 24;
 
-export const SAVINGS_START_DATE = "2026-08-02";
-
 export const AVATAR_COLORS = [
   "#0f3d2e",
   "#c9a227",
@@ -12,11 +10,13 @@ export const AVATAR_COLORS = [
   "#8f3f5f",
 ];
 
+export const SAVINGS_START_DATE = "2026-08-02";
+
+const PHT_OFFSET_MS = 8 * 60 * 60 * 1000;
+
 export function peso(n: number) {
   return "₱" + n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-
-const PHT_OFFSET_MS = 8 * 60 * 60 * 1000;
 
 export function currentWeekStart() {
   const nowUtc = new Date();
@@ -53,6 +53,12 @@ export function formatLongDate(dateStr: string) {
 
 export function formatShortDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+export function addDaysToDateStr(dateStr: string, days: number) {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
 }
 
 export function listWeeksSinceStart(upToWeekStart: string) {

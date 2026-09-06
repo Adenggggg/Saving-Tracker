@@ -7,7 +7,7 @@ import { useToast } from "~/components/Toast";
 import { ConfirmDialog } from "~/components/ConfirmDialog";
 
 type Member = { id: string; name: string; email: string };
-type MissedWeek = { weekNum: number; weekStart: string };
+type PayableWeek = { weekNum: number; weekStart: string; status: "due" | "advance" };
 
 function fireConfetti(originX: number, originY: number) {
   const canvas = document.createElement("canvas");
@@ -112,7 +112,7 @@ export function ContributionStatus({
   weekNum: number;
   groupId: string;
   weeklyAmount: number;
-  missedWeeksByMember: Record<string, MissedWeek[]>;
+  missedWeeksByMember: Record<string, PayableWeek[]>;
   isAuthenticated: boolean;
 }) {
   return (
@@ -150,7 +150,7 @@ export function ContributionStatus({
             color={AVATAR_COLORS[i % AVATAR_COLORS.length]}
             groupId={groupId}
             weeklyAmount={weeklyAmount}
-            missedWeeks={missedWeeksByMember[member.id] ?? []}
+            payableWeeks={missedWeeksByMember[member.id] ?? []}
             isAuthenticated={isAuthenticated}
           />
         ))}
@@ -166,7 +166,7 @@ function MemberRow({
   color,
   groupId,
   weeklyAmount,
-  missedWeeks,
+  payableWeeks,
   isAuthenticated,
 }: {
   member: Member;
@@ -175,7 +175,7 @@ function MemberRow({
   color: string;
   groupId: string;
   weeklyAmount: number;
-  missedWeeks: MissedWeek[];
+  payableWeeks: PayableWeek[];
   isAuthenticated: boolean;
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -183,13 +183,11 @@ function MemberRow({
   const undoFetcher = useFetcher<{ ok: boolean; reason?: string }>();
   const revalidator = useRevalidator();
   const { showToast } = useToast();
-  const behindCount = missedWeeks.length;
+  const dueCount = payableWeeks.filter((w) => w.status === "due").length;
 
   const rowRef = useRef<HTMLDivElement>(null);
   const wasPaidRef = useRef(paid);
 
-  // Fire confetti the moment this row transitions from unpaid -> paid,
-  // regardless of whether that happened via the dialog's own fetcher.
   useEffect(() => {
     if (!wasPaidRef.current && paid && rowRef.current) {
       const rect = rowRef.current.getBoundingClientRect();
@@ -230,8 +228,8 @@ function MemberRow({
             <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: paid ? "#1f7a4d" : "#b23b3b" }} />
             {paid
               ? "Paid this week"
-              : behindCount > 1
-              ? `${behindCount} weeks behind`
+              : dueCount > 1
+              ? `${dueCount} weeks behind`
               : "Pending payment"}
           </p>
         </div>
@@ -273,7 +271,7 @@ function MemberRow({
             className="shrink-0 rounded-full px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
             style={{ background: "#b23b3b" }}
           >
-            {behindCount > 1 ? "Catch Up" : "Mark Paid"}
+            {dueCount > 1 ? "Catch Up" : "Mark Paid"}
           </button>
 
           <CatchUpDialog
@@ -283,7 +281,7 @@ function MemberRow({
             memberId={member.id}
             groupId={groupId}
             weeklyAmount={weeklyAmount}
-            missedWeeks={missedWeeks}
+            missedWeeks={payableWeeks}
           />
         </>
       )}

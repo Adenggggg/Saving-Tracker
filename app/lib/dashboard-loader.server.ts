@@ -1,8 +1,10 @@
 import { eq, and } from "drizzle-orm";
 import { db } from "../../db/client";
 import { groups, groupMembers, users, contributions } from "../../db/schema";
-import { currentWeekStart, listWeeksSinceStart } from "~/lib/dashboard-format";
+import { currentWeekStart, listWeeksSinceStart, addDaysToDateStr } from "~/lib/dashboard-format";
 import { getBudgetCategories } from "~/lib/budget-categories.server";
+
+const ADVANCE_WEEKS_ALLOWED = 4;
 
 export async function loadDashboardData() {
   const group = (await db.select().from(groups).limit(1))[0];
@@ -16,7 +18,10 @@ export async function loadDashboardData() {
       weekStart: currentWeekStart(),
       totalSaved: 0,
       categories: [],
-      missedWeeksByMember: {} as Record<string, { weekNum: number; weekStart: string }[]>,
+      missedWeeksByMember: {} as Record<
+        string,
+        { weekNum: number; weekStart: string; status: "due" | "advance" }[]
+      >,
     };
   }
 
@@ -46,14 +51,25 @@ export async function loadDashboardData() {
     contributionIdThisWeek[row.userId] = row.id;
   }
 
-  const allWeeks = listWeeksSinceStart(weekStart);
-  const missedWeeksByMember: Record<string, { weekNum: number; weekStart: string }[]> = {};
+  const lookaheadUpTo = addDaysToDateStr(weekStart, ADVANCE_WEEKS_ALLOWED * 7);
+  const allWeeks = listWeeksSinceStart(lookaheadUpTo);
+
+  const missedWeeksByMember: Record<
+    string,
+    { weekNum: number; weekStart: string; status: "due" | "advance" }[]
+  > = {};
 
   for (const member of members) {
     const paidWeekStarts = new Set(
       allContributions.filter((c) => c.userId === member.id).map((c) => c.weekStart)
     );
-    missedWeeksByMember[member.id] = allWeeks.filter((w) => !paidWeekStarts.has(w.weekStart));
+
+    missedWeeksByMember[member.id] = allWeeks
+      .filter((w) => !paidWeekStarts.has(w.weekStart))
+      .map((w) => ({
+        ...w,
+        status: w.weekStart <= weekStart ? ("due" as const) : ("advance" as const),
+      }));
   }
 
   return {
