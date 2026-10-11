@@ -190,7 +190,6 @@ function MemberRow({
   const revalidator = useRevalidator();
   const { showToast } = useToast();
   const dueCount = payableWeeks.filter((w) => w.status === "due").length;
-  const hasRemaining = (remainingWeeks?.length ?? 0) > 0;
   const fullyPaid = !!remainingWeeks && remainingWeeks.length === 0;
 
   const rowRef = useRef<HTMLDivElement>(null);
@@ -250,15 +249,6 @@ function MemberRow({
 
       {paid ? (
         <div className="flex shrink-0 items-center gap-2">
-          {isAuthenticated && hasRemaining && (
-            <button
-              onClick={() => openDialog(true)}
-              className="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-[#eef4ef]"
-              style={{ borderColor: "#0e3d2c", color: "#0e3d2c" }}
-            >
-              Pay in Full
-            </button>
-          )}
           <span className="rounded-full px-4 py-1.5 text-xs font-medium" style={{ background: "#e7f5ee", color: "#1f7a4d" }}>
             {fullyPaid ? "Fully paid" : "Paid"}
           </span>
