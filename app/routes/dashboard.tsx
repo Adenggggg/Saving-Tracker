@@ -34,6 +34,7 @@ export default function Dashboard() {
     totalSaved,
     categories,
     missedWeeksByMember,
+    remainingWeeksByMember,
     currentUser,
   } = useLoaderData<typeof loader>();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -77,6 +78,7 @@ export default function Dashboard() {
           groupId={group.id}
           weeklyAmount={group.weeklyAmount}
           missedWeeksByMember={missedWeeksByMember}
+          remainingWeeksByMember={remainingWeeksByMember}
           isAuthenticated={!!currentUser}
         />
       </main>
