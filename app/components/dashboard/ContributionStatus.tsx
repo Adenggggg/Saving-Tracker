@@ -104,6 +104,7 @@ export function ContributionStatus({
   groupId,
   weeklyAmount,
   missedWeeksByMember,
+  remainingWeeksByMember,
   isAuthenticated,
 }: {
   members: Member[];
@@ -113,6 +114,7 @@ export function ContributionStatus({
   groupId: string;
   weeklyAmount: number;
   missedWeeksByMember: Record<string, PayableWeek[]>;
+  remainingWeeksByMember?: Record<string, PayableWeek[]>;
   isAuthenticated: boolean;
 }) {
   return (
@@ -151,6 +153,7 @@ export function ContributionStatus({
             groupId={groupId}
             weeklyAmount={weeklyAmount}
             payableWeeks={missedWeeksByMember[member.id] ?? []}
+            remainingWeeks={remainingWeeksByMember?.[member.id]}
             isAuthenticated={isAuthenticated}
           />
         ))}
@@ -167,6 +170,7 @@ function MemberRow({
   groupId,
   weeklyAmount,
   payableWeeks,
+  remainingWeeks,
   isAuthenticated,
 }: {
   member: Member;
@@ -176,14 +180,18 @@ function MemberRow({
   groupId: string;
   weeklyAmount: number;
   payableWeeks: PayableWeek[];
+  remainingWeeks?: PayableWeek[];
   isAuthenticated: boolean;
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogStartsFull, setDialogStartsFull] = useState(false);
   const [undoConfirmOpen, setUndoConfirmOpen] = useState(false);
   const undoFetcher = useFetcher<{ ok: boolean; reason?: string }>();
   const revalidator = useRevalidator();
   const { showToast } = useToast();
   const dueCount = payableWeeks.filter((w) => w.status === "due").length;
+  const hasRemaining = (remainingWeeks?.length ?? 0) > 0;
+  const fullyPaid = !!remainingWeeks && remainingWeeks.length === 0;
 
   const rowRef = useRef<HTMLDivElement>(null);
   const wasPaidRef = useRef(paid);
@@ -213,6 +221,11 @@ function MemberRow({
     undoFetcher.submit({ contributionId }, { method: "post", action: "/api/undo-payment" });
   }
 
+  function openDialog(startFull: boolean) {
+    setDialogStartsFull(startFull);
+    setDialogOpen(true);
+  }
+
   return (
     <div ref={rowRef} className="flex flex-wrap items-center justify-between gap-2 border-b border-border py-3 last:border-0">
       <div className="flex min-w-0 items-center gap-3">
@@ -237,8 +250,17 @@ function MemberRow({
 
       {paid ? (
         <div className="flex shrink-0 items-center gap-2">
+          {isAuthenticated && hasRemaining && (
+            <button
+              onClick={() => openDialog(true)}
+              className="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-[#eef4ef]"
+              style={{ borderColor: "#0e3d2c", color: "#0e3d2c" }}
+            >
+              Pay in Full
+            </button>
+          )}
           <span className="rounded-full px-4 py-1.5 text-xs font-medium" style={{ background: "#e7f5ee", color: "#1f7a4d" }}>
-            Paid
+            {fullyPaid ? "Fully paid" : "Paid"}
           </span>
           {isAuthenticated && contributionId && (
             <button
@@ -264,27 +286,27 @@ function MemberRow({
           />
         </div>
       ) : (
-        <>
-          <button
-            onClick={() => setDialogOpen(true)}
-            disabled={!isAuthenticated}
-            className="shrink-0 rounded-full px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-            style={{ background: "#b23b3b" }}
-          >
-            {dueCount > 1 ? "Catch Up" : "Mark Paid"}
-          </button>
-
-          <CatchUpDialog
-            open={dialogOpen}
-            onClose={() => setDialogOpen(false)}
-            memberName={member.name}
-            memberId={member.id}
-            groupId={groupId}
-            weeklyAmount={weeklyAmount}
-            missedWeeks={payableWeeks}
-          />
-        </>
+        <button
+          onClick={() => openDialog(false)}
+          disabled={!isAuthenticated}
+          className="shrink-0 rounded-full px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          style={{ background: "#b23b3b" }}
+        >
+          {dueCount > 1 ? "Catch Up" : "Mark Paid"}
+        </button>
       )}
+
+      <CatchUpDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        memberName={member.name}
+        memberId={member.id}
+        groupId={groupId}
+        weeklyAmount={weeklyAmount}
+        missedWeeks={payableWeeks}
+        remainingWeeks={remainingWeeks}
+        startInFullMode={dialogStartsFull}
+      />
     </div>
   );
 }

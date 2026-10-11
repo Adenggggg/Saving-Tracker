@@ -14,6 +14,8 @@ export function CatchUpDialog({
   groupId,
   weeklyAmount,
   missedWeeks,
+  remainingWeeks,
+  startInFullMode,
 }: {
   open: boolean;
   onClose: () => void;
@@ -22,6 +24,10 @@ export function CatchUpDialog({
   groupId: string;
   weeklyAmount: number;
   missedWeeks: PayableWeek[];
+  /** Every unpaid week through the end of the schedule. Enables "Pay full balance". */
+  remainingWeeks?: PayableWeek[];
+  /** Open directly on the Pay in Full view. */
+  startInFullMode?: boolean;
 }) {
   const fetcher = useFetcher<{ ok: boolean; count?: number; reason?: string }>();
   const { showToast } = useToast();
@@ -33,6 +39,7 @@ export function CatchUpDialog({
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [amounts, setAmounts] = useState<Record<string, string>>({});
   const [advanceAmountInput, setAdvanceAmountInput] = useState("0");
+  const [fullMode, setFullMode] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -45,6 +52,7 @@ export function CatchUpDialog({
       setSelected(nextSelected);
       setAmounts(nextAmounts);
       setAdvanceAmountInput("0");
+      setFullMode(!!startInFullMode && (remainingWeeks?.length ?? 0) > 0);
     }
   }, [open]);
 
@@ -73,8 +81,16 @@ export function CatchUpDialog({
   const coveredAdvanceWeeks = advanceWeeks.slice(0, advanceWeeksCovered);
   const advanceRemainder = advanceAmount - advanceWeeksCovered * weeklyAmount;
 
-  const grandTotal = dueTotal + advanceWeeksCovered * weeklyAmount;
-  const totalWeeksSelected = selectedDueWeeks.length + advanceWeeksCovered;
+  // Pay in Full
+  const remaining = remainingWeeks ?? [];
+  const fullTotal = remaining.length * weeklyAmount;
+  const fullFirst = remaining[0];
+  const fullLast = remaining[remaining.length - 1];
+
+  const grandTotal = fullMode ? fullTotal : dueTotal + advanceWeeksCovered * weeklyAmount;
+  const totalWeeksSelected = fullMode
+    ? remaining.length
+    : selectedDueWeeks.length + advanceWeeksCovered;
 
   function toggleDue(weekStart: string) {
     setSelected((prev) => ({ ...prev, [weekStart]: !prev[weekStart] }));
@@ -89,16 +105,19 @@ export function CatchUpDialog({
       showToast("Select at least one week.", "error");
       return;
     }
-    const entries = [
-      ...selectedDueWeeks.map((w) => ({
-        weekStart: w.weekStart,
-        amount: Number(amounts[w.weekStart]) || 0,
-      })),
-      ...coveredAdvanceWeeks.map((w) => ({ weekStart: w.weekStart, amount: weeklyAmount })),
-    ];
+
+    const entries = fullMode
+      ? remaining.map((w) => ({ weekStart: w.weekStart, amount: weeklyAmount }))
+      : [
+          ...selectedDueWeeks.map((w) => ({
+            weekStart: w.weekStart,
+            amount: Number(amounts[w.weekStart]) || 0,
+          })),
+          ...coveredAdvanceWeeks.map((w) => ({ weekStart: w.weekStart, amount: weeklyAmount })),
+        ];
 
     fetcher.submit(
-      { userId: memberId, groupId, entries },
+      { userId: memberId, groupId, entries, full: fullMode },
       { method: "post", action: "/api/catch-up", encType: "application/json" }
     );
   }
@@ -108,103 +127,147 @@ export function CatchUpDialog({
       <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-lg">
         <div className="mb-1 flex items-center justify-between">
           <p className="text-sm font-semibold" style={{ color: "#0e3d2c" }}>
-            Catch Up — {memberName}
+            {fullMode ? "Pay in Full" : "Catch Up"} — {memberName}
           </p>
           <button onClick={onClose} aria-label="Close" className="text-muted-foreground hover:text-foreground">
             <X size={18} />
           </button>
         </div>
         <p className="mb-4 text-xs text-muted-foreground">
-          Select which due weeks to mark paid, and optionally pay ahead for upcoming weeks.
+          {fullMode
+            ? "Settle your entire remaining balance in one payment."
+            : "Select which due weeks to mark paid, and optionally pay ahead for upcoming weeks."}
         </p>
 
         <div className="max-h-72 space-y-4 overflow-y-auto pr-1">
-          {dueWeeks.length > 0 && (
-            <div>
-              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold" style={{ color: "#b23b3b" }}>
-                <Clock size={12} />
-                DUE ({dueWeeks.length})
+          {fullMode ? (
+            <div className="rounded-lg border border-border p-3">
+              <p className="text-xs text-muted-foreground">This will record</p>
+              <p className="mt-1 text-sm font-medium" style={{ color: "#0e3d2c" }}>
+                {remaining.length} week{remaining.length === 1 ? "" : "s"} × {peso(weeklyAmount)}
               </p>
-              <div className="space-y-2">
-                {dueWeeks.map((w) => (
-                  <label key={w.weekStart} className="flex items-center gap-3 rounded-lg border border-border p-2.5">
+              {fullFirst && fullLast && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Week {fullFirst.weekNum}
+                  {remaining.length > 1 && ` – ${fullLast.weekNum}`} ({formatShortDate(fullFirst.weekStart)}
+                  {remaining.length > 1 && ` – ${formatShortDate(fullLast.weekStart)}`})
+                </p>
+              )}
+            </div>
+          ) : (
+            <>
+              {dueWeeks.length > 0 && (
+                <div>
+                  <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold" style={{ color: "#b23b3b" }}>
+                    <Clock size={12} />
+                    DUE ({dueWeeks.length})
+                  </p>
+                  <div className="space-y-2">
+                    {dueWeeks.map((w) => (
+                      <label key={w.weekStart} className="flex items-center gap-3 rounded-lg border border-border p-2.5">
+                        <input
+                          type="checkbox"
+                          checked={!!selected[w.weekStart]}
+                          onChange={() => toggleDue(w.weekStart)}
+                          className="h-4 w-4 shrink-0 accent-[#0e3d2c]"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm">
+                            Week {w.weekNum}{" "}
+                            <span className="text-muted-foreground">· {formatShortDate(w.weekStart)}</span>
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1">
+                          <span className="text-xs text-muted-foreground">₱</span>
+                          <input
+                            type="number"
+                            min="1"
+                            value={amounts[w.weekStart] ?? ""}
+                            onChange={(e) => updateDueAmount(w.weekStart, e.target.value)}
+                            disabled={!selected[w.weekStart]}
+                            className="w-16 rounded-md border border-border px-1.5 py-1 text-right text-xs outline-none disabled:opacity-40"
+                          />
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {advanceWeeks.length > 0 && (
+                <div>
+                  <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold" style={{ color: "#2563a8" }}>
+                    <TrendingUp size={12} />
+                    PAY IN ADVANCE (OPTIONAL)
+                  </p>
+                  <div className="rounded-lg border border-border p-3">
+                    <label className="mb-1.5 block text-xs text-muted-foreground">
+                      Advance amount (₱{weeklyAmount}/week)
+                    </label>
                     <input
-                      type="checkbox"
-                      checked={!!selected[w.weekStart]}
-                      onChange={() => toggleDue(w.weekStart)}
-                      className="h-4 w-4 shrink-0 accent-[#0e3d2c]"
+                      type="number"
+                      min="0"
+                      step={weeklyAmount}
+                      value={advanceAmountInput}
+                      onChange={(e) => setAdvanceAmountInput(e.target.value)}
+                      className="w-full rounded-md border border-border px-2 py-1.5 text-sm outline-none"
                     />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm">
-                        Week {w.weekNum} <span className="text-muted-foreground">· {formatShortDate(w.weekStart)}</span>
+
+                    {advanceWeeksCovered > 0 ? (
+                      <p className="mt-2 text-xs" style={{ color: "#2563a8" }}>
+                        Covers {advanceWeeksCovered} week{advanceWeeksCovered === 1 ? "" : "s"} ahead — Week{" "}
+                        {coveredAdvanceWeeks[0].weekNum}
+                        {coveredAdvanceWeeks.length > 1 &&
+                          ` – ${coveredAdvanceWeeks[coveredAdvanceWeeks.length - 1].weekNum}`}{" "}
+                        ({formatShortDate(coveredAdvanceWeeks[0].weekStart)}
+                        {coveredAdvanceWeeks.length > 1 &&
+                          ` – ${formatShortDate(coveredAdvanceWeeks[coveredAdvanceWeeks.length - 1].weekStart)}`}
+                        )
                       </p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      <span className="text-xs text-muted-foreground">₱</span>
-                      <input
-                        type="number"
-                        min="1"
-                        value={amounts[w.weekStart] ?? ""}
-                        onChange={(e) => updateDueAmount(w.weekStart, e.target.value)}
-                        disabled={!selected[w.weekStart]}
-                        className="w-16 rounded-md border border-border px-1.5 py-1 text-right text-xs outline-none disabled:opacity-40"
-                      />
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {advanceWeeks.length > 0 && (
-            <div>
-              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold" style={{ color: "#2563a8" }}>
-                <TrendingUp size={12} />
-                PAY IN ADVANCE (OPTIONAL)
-              </p>
-              <div className="rounded-lg border border-border p-3">
-                <label className="mb-1.5 block text-xs text-muted-foreground">
-                  Advance amount (₱{weeklyAmount}/week)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step={weeklyAmount}
-                  value={advanceAmountInput}
-                  onChange={(e) => setAdvanceAmountInput(e.target.value)}
-                  className="w-full rounded-md border border-border px-2 py-1.5 text-sm outline-none"
-                />
-
-                {advanceWeeksCovered > 0 ? (
-                  <p className="mt-2 text-xs" style={{ color: "#2563a8" }}>
-                    Covers {advanceWeeksCovered} week{advanceWeeksCovered === 1 ? "" : "s"} ahead — Week{" "}
-                    {coveredAdvanceWeeks[0].weekNum}
-                    {coveredAdvanceWeeks.length > 1 && ` – ${coveredAdvanceWeeks[coveredAdvanceWeeks.length - 1].weekNum}`}
-                    {" "}({formatShortDate(coveredAdvanceWeeks[0].weekStart)}
-                    {coveredAdvanceWeeks.length > 1 &&
-                      ` – ${formatShortDate(coveredAdvanceWeeks[coveredAdvanceWeeks.length - 1].weekStart)}`}
-                    )
-                  </p>
-                ) : (
-                  advanceAmount > 0 && (
-                    <p className="mt-2 text-xs text-muted-foreground">Not enough yet for a full week ahead.</p>
-                  )
-                )}
-                {advanceRemainder > 0 && (
-                  <p className="mt-1 text-xs" style={{ color: "#b23b3b" }}>
-                    {peso(advanceRemainder)} left over.
-                  </p>
-                )}
-              </div>
-            </div>
+                    ) : (
+                      advanceAmount > 0 && (
+                        <p className="mt-2 text-xs text-muted-foreground">Not enough yet for a full week ahead.</p>
+                      )
+                    )}
+                    {advanceRemainder > 0 && (
+                      <p className="mt-1 text-xs" style={{ color: "#b23b3b" }}>
+                        {peso(advanceRemainder)} left over.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
+
+        {remainingWeeks && remaining.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setFullMode((v) => !v)}
+            className="mt-3 w-full rounded-lg border px-3 py-2 text-xs font-medium transition-colors hover:bg-[#eef4ef]"
+            style={{
+              borderColor: "#0e3d2c",
+              color: "#0e3d2c",
+              background: fullMode ? "#eef4ef" : "white",
+            }}
+          >
+            {fullMode ? "← Back to catch up" : `Pay full balance · ${peso(fullTotal)}`}
+          </button>
+        )}
+        {remainingWeeks && remaining.length === 0 && (
+          <p className="mt-3 text-center text-xs font-medium" style={{ color: "#0e3d2c" }}>
+            Fully paid ✓
+          </p>
+        )}
 
         <div className="mt-4 flex items-center justify-between rounded-lg p-3" style={{ background: "#eef4ef" }}>
           <div className="flex items-center gap-2">
             <Wallet size={15} style={{ color: "#0e3d2c" }} />
             <span className="text-xs font-medium" style={{ color: "#0e3d2c" }}>
-              Total ({totalWeeksSelected} week{totalWeeksSelected === 1 ? "" : "s"})
+              {fullMode ? "Total (Full balance" : "Total ("}
+              {fullMode ? " · " : ""}
+              {totalWeeksSelected} week{totalWeeksSelected === 1 ? "" : "s"})
             </span>
           </div>
           <span className="text-sm font-semibold" style={{ color: "#0e3d2c" }}>

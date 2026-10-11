@@ -1,10 +1,12 @@
 import { eq, and } from "drizzle-orm";
 import { db } from "../../db/client";
 import { groups, groupMembers, users, contributions } from "../../db/schema";
-import { currentWeekStart, listWeeksSinceStart, addDaysToDateStr } from "~/lib/dashboard-format";
+import { currentWeekStart, listWeeksSinceStart, addDaysToDateStr, TOTAL_WEEKS } from "~/lib/dashboard-format";
 import { getBudgetCategories } from "~/lib/budget-categories.server";
 
 const ADVANCE_WEEKS_ALLOWED = 4;
+
+type PayableWeek = { weekNum: number; weekStart: string; status: "due" | "advance" };
 
 export async function loadDashboardData() {
   const group = (await db.select().from(groups).limit(1))[0];
@@ -18,10 +20,8 @@ export async function loadDashboardData() {
       weekStart: currentWeekStart(),
       totalSaved: 0,
       categories: [],
-      missedWeeksByMember: {} as Record<
-        string,
-        { weekNum: number; weekStart: string; status: "due" | "advance" }[]
-      >,
+      missedWeeksByMember: {} as Record<string, PayableWeek[]>,
+      remainingWeeksByMember: {} as Record<string, PayableWeek[]>,
     };
   }
 
@@ -51,25 +51,35 @@ export async function loadDashboardData() {
     contributionIdThisWeek[row.userId] = row.id;
   }
 
+  // Normal catch-up / advance window (unchanged)
   const lookaheadUpTo = addDaysToDateStr(weekStart, ADVANCE_WEEKS_ALLOWED * 7);
   const allWeeks = listWeeksSinceStart(lookaheadUpTo);
 
-  const missedWeeksByMember: Record<
-    string,
-    { weekNum: number; weekStart: string; status: "due" | "advance" }[]
-  > = {};
+  // Full schedule for "Pay in Full": every week up to each member's share of the goal
+  const fullSchedule = listWeeksSinceStart(addDaysToDateStr(weekStart, 52 * 7)).filter(
+    (w) => w.weekNum <= TOTAL_WEEKS
+  );
+
+  const missedWeeksByMember: Record<string, PayableWeek[]> = {};
+  const remainingWeeksByMember: Record<string, PayableWeek[]> = {};
 
   for (const member of members) {
     const paidWeekStarts = new Set(
       allContributions.filter((c) => c.userId === member.id).map((c) => c.weekStart)
     );
 
+    const toStatus = (w: { weekNum: number; weekStart: string }): PayableWeek => ({
+      ...w,
+      status: w.weekStart <= weekStart ? "due" : "advance",
+    });
+
     missedWeeksByMember[member.id] = allWeeks
       .filter((w) => !paidWeekStarts.has(w.weekStart))
-      .map((w) => ({
-        ...w,
-        status: w.weekStart <= weekStart ? ("due" as const) : ("advance" as const),
-      }));
+      .map(toStatus);
+
+    remainingWeeksByMember[member.id] = fullSchedule
+      .filter((w) => !paidWeekStarts.has(w.weekStart))
+      .map(toStatus);
   }
 
   return {
@@ -81,6 +91,7 @@ export async function loadDashboardData() {
     totalSaved,
     categories,
     missedWeeksByMember,
+    remainingWeeksByMember,
   };
 }
 
